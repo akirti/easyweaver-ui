@@ -1,5 +1,6 @@
-import { NavLink } from 'react-router-dom';
-import { Database, Search, Settings } from 'lucide-react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { Database, Search, Settings, LogOut } from 'lucide-react';
+import { useAuthStore } from '@/stores/auth-store';
 
 const navItems = [
   { to: '/queries', label: 'Query Explorer', icon: Search },
@@ -7,6 +8,14 @@ const navItems = [
 ];
 
 export function Sidebar() {
+  const navigate = useNavigate();
+  const { isAuthenticated, logout } = useAuthStore();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
   return (
     <aside className="flex w-60 flex-col border-r bg-sidebar text-sidebar-foreground">
       <div className="flex h-14 items-center border-b px-4">
@@ -30,14 +39,29 @@ export function Sidebar() {
           </NavLink>
         ))}
       </nav>
-      <div className="border-t p-3">
+      <div className="space-y-1 border-t p-3">
         <NavLink
           to="/settings"
-          className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50"
+          className={({ isActive }) =>
+            `flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              isActive
+                ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground'
+            }`
+          }
         >
           <Settings className="h-4 w-4" />
           Settings
         </NavLink>
+        {isAuthenticated && (
+          <button
+            onClick={handleLogout}
+            className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground transition-colors"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </button>
+        )}
       </div>
     </aside>
   );

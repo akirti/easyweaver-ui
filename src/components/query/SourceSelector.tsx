@@ -9,6 +9,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useSources, useSourceSchema } from '@/queries/use-sources';
 import { Skeleton } from '@/components/ui/skeleton';
+import { useEffect } from 'react';
 
 interface Props {
   label: string;
@@ -35,17 +36,29 @@ export function SourceSelector({
   const tableSchema = schema?.find((t) => t.name === table);
   const allColumnNames = tableSchema?.columns.map((c) => c.name) || [];
 
+  // Auto-select all columns when a table is picked and columns list is empty
+  useEffect(() => {
+    if (allColumnNames.length > 0 && columns.length === 0) {
+      onColumnsChange(allColumnNames);
+    }
+  }, [table, allColumnNames.length]);
+
+  const allSelected = columns.length > 0 && columns.length === allColumnNames.length;
+
   const toggleColumn = (col: string) => {
     if (columns.includes(col)) {
-      onColumnsChange(columns.filter((c) => c !== col));
+      const next = columns.filter((c) => c !== col);
+      // Don't allow deselecting everything — keep at least one
+      if (next.length > 0) onColumnsChange(next);
     } else {
       onColumnsChange([...columns, col]);
     }
   };
 
   const toggleAll = () => {
-    if (columns.length === allColumnNames.length) {
-      onColumnsChange([]);
+    if (allSelected) {
+      // Deselect all → keep just the first column
+      onColumnsChange([allColumnNames[0]]);
     } else {
       onColumnsChange(allColumnNames);
     }
@@ -102,7 +115,7 @@ export function SourceSelector({
               onClick={toggleAll}
               className="text-xs text-primary underline"
             >
-              {columns.length === allColumnNames.length ? 'Deselect All' : 'Select All'}
+              {allSelected ? 'Deselect All' : 'Select All'}
             </button>
           </div>
           <div className="grid grid-cols-3 gap-1">
@@ -112,7 +125,7 @@ export function SourceSelector({
                 className="flex items-center gap-1.5 text-xs cursor-pointer"
               >
                 <Checkbox
-                  checked={columns.length === 0 || columns.includes(col.name)}
+                  checked={columns.includes(col.name)}
                   onCheckedChange={() => toggleColumn(col.name)}
                 />
                 <span>{col.name}</span>

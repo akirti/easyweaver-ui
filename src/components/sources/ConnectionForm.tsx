@@ -1,4 +1,4 @@
-import { useForm } from 'react-hook-form';
+import { useForm, type Resolver } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import {
@@ -22,12 +22,12 @@ import { toast } from 'sonner';
 
 const schema = z.object({
   name: z.string().min(1, 'Name required'),
-  source_type: z.enum(['postgres', 'mongodb']),
+  source_type: z.string().min(1, 'Type required'),
   host: z.string().min(1, 'Host required'),
-  port: z.number().int().positive(),
+  port: z.string().refine((v) => /^\d+$/.test(v) && Number(v) > 0, 'Valid port required'),
   database: z.string().min(1, 'Database required'),
-  user: z.string(),
-  password: z.string(),
+  user: z.string().default(''),
+  password: z.string().default(''),
   auth_database: z.string().optional(),
 });
 
@@ -36,6 +36,11 @@ type FormData = z.infer<typeof schema>;
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+}
+
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return <p className="mt-1 text-sm text-destructive">{message}</p>;
 }
 
 export function ConnectionForm({ open, onOpenChange }: Props) {
@@ -48,10 +53,15 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
     reset,
     formState: { errors },
   } = useForm<FormData>({
-    resolver: zodResolver(schema),
+    resolver: zodResolver(schema) as Resolver<FormData>,
     defaultValues: {
+      name: '',
       source_type: 'postgres',
-      port: 5432,
+      host: '',
+      port: '5432',
+      database: '',
+      user: '',
+      password: '',
       auth_database: 'admin',
     },
   });
@@ -59,13 +69,15 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
   const sourceType = watch('source_type');
 
   const onSubmit = async (data: FormData) => {
+    const st = data.source_type as 'postgres' | 'mongodb';
+    const port = Number(data.port);
     try {
       const credentials =
-        data.source_type === 'postgres'
+        st === 'postgres'
           ? {
               type: 'postgres' as const,
               host: data.host,
-              port: data.port,
+              port,
               database: data.database,
               user: data.user,
               password: data.password,
@@ -73,7 +85,7 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
           : {
               type: 'mongodb' as const,
               host: data.host,
-              port: data.port,
+              port,
               database: data.database,
               user: data.user,
               password: data.password,
@@ -82,7 +94,7 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
 
       await createMutation.mutateAsync({
         name: data.name,
-        source_type: data.source_type,
+        source_type: st,
         credentials,
       });
       toast.success('Connection created');
@@ -103,7 +115,7 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
           <div>
             <Label>Name</Label>
             <Input {...register('name')} placeholder="My Database" />
-            {errors.name && <p className="mt-1 text-sm text-destructive">{errors.name.message}</p>}
+            <FieldError message={errors.name?.message} />
           </div>
 
           <div>
@@ -111,8 +123,8 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
             <Select
               value={sourceType}
               onValueChange={(v) => {
-                setValue('source_type', v as 'postgres' | 'mongodb');
-                setValue('port', v === 'postgres' ? 5432 : 27017);
+                setValue('source_type', v);
+                setValue('port', v === 'postgres' ? '5432' : '27017');
               }}
             >
               <SelectTrigger>
@@ -123,22 +135,26 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
                 <SelectItem value="mongodb">MongoDB</SelectItem>
               </SelectContent>
             </Select>
+            <FieldError message={errors.source_type?.message} />
           </div>
 
           <div className="grid grid-cols-3 gap-3">
             <div className="col-span-2">
               <Label>Host</Label>
               <Input {...register('host')} placeholder="localhost" />
+              <FieldError message={errors.host?.message} />
             </div>
             <div>
               <Label>Port</Label>
               <Input {...register('port')} type="number" />
+              <FieldError message={errors.port?.message} />
             </div>
           </div>
 
           <div>
             <Label>Database</Label>
             <Input {...register('database')} placeholder="mydb" />
+            <FieldError message={errors.database?.message} />
           </div>
 
           <div className="grid grid-cols-2 gap-3">
