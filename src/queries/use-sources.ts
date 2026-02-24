@@ -55,3 +55,12 @@ export function useTablePreview(sourceId: string, table: string) {
     enabled: !!sourceId && !!table,
   });
 }
+
+export function useUploadFileSource() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ name, file }: { name: string; file: File }) =>
+      sourcesApi.uploadFile(name, file),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['sources'] }),
+  });
+}

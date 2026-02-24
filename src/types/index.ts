@@ -1,7 +1,9 @@
+export type SourceType = 'postgres' | 'mongodb' | 'mysql' | 'db2' | 'file' | 'rest_api';
+
 export interface Source {
   id: string;
   name: string;
-  source_type: 'postgres' | 'mongodb';
+  source_type: SourceType;
   created_at: string;
   updated_at: string;
 }
@@ -25,11 +27,68 @@ export interface MongoCredentials {
   auth_database: string;
 }
 
-export type SourceCredentials = PostgresCredentials | MongoCredentials;
+export interface MySQLCredentials {
+  type: 'mysql';
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+}
+
+export interface DB2Credentials {
+  type: 'db2';
+  host: string;
+  port: number;
+  database: string;
+  user: string;
+  password: string;
+}
+
+export interface FileCredentials {
+  type: 'file';
+  gcp_path: string;
+  file_format: 'csv' | 'json' | 'xlsx' | 'xls';
+  original_filename: string;
+}
+
+export interface RestAPIEndpoint {
+  path: string;
+  method: string;
+  data_path: string;
+}
+
+export interface RestAPICredentials {
+  type: 'rest_api';
+  base_url: string;
+  auth_type: 'none' | 'bearer' | 'basic' | 'api_key' | 'oauth2_client_credentials' | 'login';
+  bearer_token?: string;
+  basic_user?: string;
+  basic_password?: string;
+  api_key_header?: string;
+  api_key_value?: string;
+  oauth2_token_url?: string;
+  oauth2_client_id?: string;
+  oauth2_client_secret?: string;
+  oauth2_scope?: string;
+  login_url?: string;
+  login_body?: Record<string, unknown>;
+  login_token_path?: string;
+  headers?: Record<string, string>;
+  endpoints?: Record<string, RestAPIEndpoint>;
+}
+
+export type SourceCredentials =
+  | PostgresCredentials
+  | MongoCredentials
+  | MySQLCredentials
+  | DB2Credentials
+  | FileCredentials
+  | RestAPICredentials;
 
 export interface SourceCreate {
   name: string;
-  source_type: 'postgres' | 'mongodb';
+  source_type: SourceType;
   credentials: SourceCredentials;
 }
 

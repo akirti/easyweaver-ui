@@ -24,4 +24,15 @@ export const sourcesApi = {
 
   previewTable: (id: string, table: string) =>
     client.get<TablePreview>(`/sources/${id}/preview/${table}`).then((r) => r.data),
+
+  uploadFile: (name: string, file: File) => {
+    const formData = new FormData();
+    formData.append('name', name);
+    formData.append('file', file);
+    return client
+      .post<Source>('/sources/upload', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      })
+      .then((r) => r.data);
+  },
 };

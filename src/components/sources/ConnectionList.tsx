@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Database, Trash2, Plug } from 'lucide-react';
+import { Database, Trash2, Plug, FileSpreadsheet, Globe } from 'lucide-react';
+import type { SourceType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -7,6 +8,21 @@ import { useSources, useDeleteSource, useTestConnection } from '@/queries/use-so
 import { ConnectionForm } from './ConnectionForm';
 import { toast } from 'sonner';
 import type { Source } from '@/types';
+
+const sourceTypeLabels: Record<SourceType, string> = {
+  postgres: 'PostgreSQL',
+  mongodb: 'MongoDB',
+  mysql: 'MySQL',
+  db2: 'DB2',
+  file: 'File',
+  rest_api: 'REST API',
+};
+
+function SourceIcon({ type }: { type: SourceType }) {
+  if (type === 'file') return <FileSpreadsheet className="h-8 w-8 text-muted-foreground" />;
+  if (type === 'rest_api') return <Globe className="h-8 w-8 text-muted-foreground" />;
+  return <Database className="h-8 w-8 text-muted-foreground" />;
+}
 
 export function ConnectionList() {
   const { data: sources, isLoading } = useSources();
@@ -59,11 +75,11 @@ export function ConnectionList() {
           <Card key={source.id} className="p-4">
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-3">
-                <Database className="h-8 w-8 text-muted-foreground" />
+                <SourceIcon type={source.source_type} />
                 <div>
                   <h3 className="font-medium">{source.name}</h3>
                   <Badge variant="secondary" className="mt-1">
-                    {source.source_type}
+                    {sourceTypeLabels[source.source_type] ?? source.source_type}
                   </Badge>
                 </div>
               </div>
