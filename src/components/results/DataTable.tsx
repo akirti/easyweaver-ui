@@ -20,11 +20,12 @@ import { queriesApi } from '@/api/queries';
 
 interface Props {
   runId: string;
+  compact?: boolean;
 }
 
-export function DataTable({ runId }: Props) {
+export function DataTable({ runId, compact }: Props) {
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
+  const [pageSize, setPageSize] = useState(compact ? 10 : 50);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
@@ -46,7 +47,8 @@ export function DataTable({ runId }: Props) {
   };
 
   const columns: ColumnDef<Record<string, unknown>>[] = (data?.columns || []).map((col) => ({
-    accessorKey: col.name,
+    id: col.name,
+    accessorFn: (row) => row[col.name],
     header: () => (
       <button
         className="flex items-center gap-1 font-medium hover:text-foreground"
@@ -104,16 +106,18 @@ export function DataTable({ runId }: Props) {
   return (
     <div className="space-y-3">
       {/* Toolbar */}
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-muted-foreground">
-          Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, data.total)} of{' '}
-          {data.total.toLocaleString()} rows
-        </span>
-        <Button variant="outline" size="sm" onClick={() => queriesApi.exportCsv(runId)}>
-          <Download className="mr-1 h-3 w-3" />
-          Export CSV
-        </Button>
-      </div>
+      {!compact && (
+        <div className="flex items-center justify-between">
+          <span className="text-sm text-muted-foreground">
+            Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, data.total)} of{' '}
+            {data.total.toLocaleString()} rows
+          </span>
+          <Button variant="outline" size="sm" onClick={() => queriesApi.exportCsv(runId)}>
+            <Download className="mr-1 h-3 w-3" />
+            Export CSV
+          </Button>
+        </div>
+      )}
 
       {/* Table */}
       <div className="overflow-auto rounded-md border">
@@ -146,42 +150,44 @@ export function DataTable({ runId }: Props) {
       </div>
 
       {/* Pagination */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm">Rows per page:</span>
-          <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
-            <SelectTrigger className="w-20">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="25">25</SelectItem>
-              <SelectItem value="50">50</SelectItem>
-              <SelectItem value="100">100</SelectItem>
-            </SelectContent>
-          </Select>
+      {!compact && (
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-sm">Rows per page:</span>
+            <Select value={String(pageSize)} onValueChange={(v) => { setPageSize(Number(v)); setPage(1); }}>
+              <SelectTrigger className="w-20">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="25">25</SelectItem>
+                <SelectItem value="50">50</SelectItem>
+                <SelectItem value="100">100</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page <= 1}
+              onClick={() => setPage((p) => p - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm">
+              Page {page} of {data.total_pages}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={page >= data.total_pages}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page <= 1}
-            onClick={() => setPage((p) => p - 1)}
-          >
-            Previous
-          </Button>
-          <span className="text-sm">
-            Page {page} of {data.total_pages}
-          </span>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={page >= data.total_pages}
-            onClick={() => setPage((p) => p + 1)}
-          >
-            Next
-          </Button>
-        </div>
-      </div>
+      )}
     </div>
   );
 }

@@ -58,10 +58,17 @@ export interface TablePreview {
   total_sampled: number;
 }
 
+export interface ValueFromDataset {
+  run_id: string;
+  column: string;
+}
+
 export interface FilterCondition {
   column: string;
-  operator: 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' | 'like' | 'is_null' | 'is_not_null';
+  operator: 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' | 'like' | 'is_null' | 'is_not_null' | 'in' | 'not_in' | 'between';
   value?: unknown;
+  value2?: unknown;
+  value_from?: ValueFromDataset;
 }
 
 export interface SortSpec {
@@ -69,11 +76,24 @@ export interface SortSpec {
   direction: 'asc' | 'desc';
 }
 
+export type TransformType = 'rename' | 'format_date' | 'round' | 'uppercase' | 'lowercase' | 'trim' | 'cast';
+export type CastTargetType = 'string' | 'integer' | 'float' | 'boolean' | 'date' | 'datetime';
+
+export interface TransformSpec {
+  column: string;
+  type: TransformType;
+  new_name?: string;
+  date_format?: string;
+  decimals?: number;
+  target_type?: CastTargetType;
+}
+
 export interface QuerySourceConfig {
   source_id: string;
   table: string;
   columns?: string[];
   filters: FilterCondition[];
+  filter_logic?: 'and' | 'or';
 }
 
 export interface JoinConfig {
@@ -90,6 +110,16 @@ export interface QueryRequest {
   sort: SortSpec[];
   page: number;
   page_size: number;
+}
+
+export interface JoinResultsRequest {
+  left_run_id: string;
+  right_run_id: string;
+  join: JoinConfig;
+  filters: FilterCondition[];
+  filter_logic?: 'and' | 'or';
+  sort: SortSpec[];
+  transforms: TransformSpec[];
 }
 
 export interface QueryRun {

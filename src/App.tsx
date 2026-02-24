@@ -5,7 +5,7 @@ import { Toaster } from '@/components/ui/sonner';
 import { AppShell } from '@/components/layout/AppShell';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { LoginPage } from '@/components/auth/LoginPage';
-import { QueryBuilder } from '@/components/query/QueryBuilder';
+import { InteractiveQueryBuilder } from '@/components/query/InteractiveQueryBuilder';
 import { ConnectionList } from '@/components/sources/ConnectionList';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { useAuthStore } from '@/stores/auth-store';
@@ -41,7 +41,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<AuthGuard />}>
               <Route element={<AppShell />}>
-                <Route path="/queries" element={<QueryBuilder />} />
+                <Route path="/queries" element={<InteractiveQueryBuilder />} />
                 <Route path="/sources" element={<ConnectionList />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/" element={<Navigate to="/queries" replace />} />

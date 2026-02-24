@@ -1,5 +1,5 @@
 import client from './client';
-import type { QueryRequest, QueryRun, QueryResults } from '@/types';
+import type { QueryRequest, JoinResultsRequest, QueryRun, QueryResults } from '@/types';
 
 export const queriesApi = {
   execute: (request: QueryRequest) =>
@@ -15,6 +15,9 @@ export const queriesApi = {
     client
       .get<QueryResults>(`/queries/runs/${runId}/results`, { params })
       .then((r) => r.data),
+
+  joinResults: (request: JoinResultsRequest) =>
+    client.post<QueryRun>('/queries/join-results', request).then((r) => r.data),
 
   cancel: (runId: string) => client.post(`/queries/runs/${runId}/cancel`),
 

@@ -17,6 +17,8 @@ interface Props {
   rightTable: string | null;
   joinConfig: JoinConfig | null;
   onChange: (config: JoinConfig) => void;
+  leftAllowedColumns?: string[];
+  rightAllowedColumns?: string[];
 }
 
 export function JoinConfigurator({
@@ -26,15 +28,24 @@ export function JoinConfigurator({
   rightTable,
   joinConfig,
   onChange,
+  leftAllowedColumns,
+  rightAllowedColumns,
 }: Props) {
   const { data: leftSchema } = useSourceSchema(leftSourceId || '');
   const { data: rightSchema } = useSourceSchema(rightSourceId || '');
 
-  const leftColumns = leftSchema?.find((t) => t.name === leftTable)?.columns || [];
-  const rightColumns = rightSchema?.find((t) => t.name === rightTable)?.columns || [];
+  const leftColumnsAll = leftSchema?.find((t) => t.name === leftTable)?.columns || [];
+  const rightColumnsAll = rightSchema?.find((t) => t.name === rightTable)?.columns || [];
 
-  const leftCol = leftColumns.find((c) => c.name === joinConfig?.left_on);
-  const rightCol = rightColumns.find((c) => c.name === joinConfig?.right_on);
+  const leftColumns = leftAllowedColumns
+    ? leftColumnsAll.filter((c) => leftAllowedColumns.includes(c.name))
+    : leftColumnsAll;
+  const rightColumns = rightAllowedColumns
+    ? rightColumnsAll.filter((c) => rightAllowedColumns.includes(c.name))
+    : rightColumnsAll;
+
+  const leftCol = leftColumnsAll.find((c) => c.name === joinConfig?.left_on);
+  const rightCol = rightColumnsAll.find((c) => c.name === joinConfig?.right_on);
   const typeMismatch = leftCol && rightCol && leftCol.type !== rightCol.type;
 
   if (!leftTable || !rightTable) {

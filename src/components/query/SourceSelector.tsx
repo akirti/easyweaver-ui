@@ -75,7 +75,7 @@ export function SourceSelector({
             <SelectTrigger>
               <SelectValue placeholder="Select connection" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent position="popper">
               {sources?.map((s) => (
                 <SelectItem key={s.id} value={s.id}>
                   {s.name} ({s.source_type})
@@ -94,7 +94,7 @@ export function SourceSelector({
               <SelectTrigger>
                 <SelectValue placeholder="Select table" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent position="popper" className="max-h-60">
                 {schema?.map((t) => (
                   <SelectItem key={t.name} value={t.name}>
                     {t.name} (~{t.row_estimate.toLocaleString()})

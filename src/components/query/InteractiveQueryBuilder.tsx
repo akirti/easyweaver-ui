@@ -1,0 +1,181 @@
+import { Plus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DatasetPanel } from './DatasetPanel';
+import { JoinStepCard } from './JoinStepCard';
+import { FilterBuilder } from './FilterBuilder';
+import { SortConfigurator } from './SortConfigurator';
+import { TransformBuilder } from './TransformBuilder';
+import { DataTable } from '@/components/results/DataTable';
+import { useQueryStore } from '@/stores/query-store';
+import { useQueryResults, useJoinResults } from '@/queries/use-queries';
+import { toast } from 'sonner';
+import type { JoinResultsRequest, ColumnInfo } from '@/types';
+
+export function InteractiveQueryBuilder() {
+  const store = useQueryStore();
+  const joinMutation = useJoinResults();
+
+  // Find the last completed join step for final results
+  const lastJoinIndex = store.joinSteps.length - 1;
+  const lastJoinStep = store.joinSteps[lastJoinIndex];
+  const finalRunId = lastJoinStep?.status === 'completed' ? lastJoinStep.runId : null;
+
+  // Fetch columns from the final join result for post-join filters
+  const { data: finalResultData } = useQueryResults(finalRunId, { page: 1, page_size: 1 });
+  const finalColumns: ColumnInfo[] = (finalResultData?.columns || []).map((c) => ({
+    name: c.name,
+    type: c.type,
+    nullable: true,
+    primary_key: false,
+  }));
+
+  // Helper: get the left run_id for a given join step (only when completed)
+  const getLeftRunId = (stepIndex: number): string | null => {
+    if (stepIndex === 0) {
+      const ds = store.datasets[0];
+      return ds?.status === 'completed' ? ds.runId : null;
+    }
+    const prevStep = store.joinSteps[stepIndex - 1];
+    return prevStep?.status === 'completed' ? prevStep.runId : null;
+  };
+
+  // Helper: get the left label for a join step
+  const getLeftLabel = (stepIndex: number): string => {
+    if (stepIndex === 0) return `Dataset ${String.fromCharCode(65)}`;
+    return `Join ${stepIndex} Result`;
+  };
+
+  // Apply post-join filters on the final result
+  const handleApplyPostJoin = async () => {
+    // Re-execute the last join with filters applied
+    const leftRunId = getLeftRunId(lastJoinIndex);
+    const rightRunId = store.datasets[lastJoinIndex + 1]?.runId;
+    const config = lastJoinStep?.config;
+
+    if (!leftRunId || !rightRunId || !config) return;
+
+    const request: JoinResultsRequest = {
+      left_run_id: leftRunId,
+      right_run_id: rightRunId,
+      join: config,
+      filters: store.postJoinFilters,
+      filter_logic: store.postJoinFilterLogic,
+      sort: store.postJoinSorts,
+      transforms: store.postJoinTransforms,
+    };
+
+    try {
+      const run = await joinMutation.mutateAsync(request);
+      store.setJoinResult(lastJoinIndex, run.id, 'pending');
+    } catch {
+      toast.error('Failed to apply filters');
+    }
+  };
+
+  return (
+    <div className="space-y-6 p-6">
+      {/* Dynamic dataset panels with join steps between them */}
+      {store.datasets.map((ds, idx) => {
+        const datasetLabel = `Dataset ${String.fromCharCode(65 + idx)}`;
+        // Join step index: joinSteps[idx-1] connects previous result with this dataset
+        const joinStepIndex = idx - 1;
+
+        return (
+          <div key={idx} className="space-y-4">
+            {/* Join step card before this dataset (except the first) */}
+            {idx > 0 && (
+              <JoinStepCard
+                stepIndex={joinStepIndex}
+                leftRunId={getLeftRunId(joinStepIndex)}
+                rightRunId={ds.status === 'completed' ? ds.runId : null}
+                leftLabel={getLeftLabel(joinStepIndex)}
+                rightLabel={datasetLabel}
+                joinStep={store.joinSteps[joinStepIndex]}
+              />
+            )}
+
+            {/* Dataset panel */}
+            <DatasetPanel
+              label={datasetLabel}
+              dataset={ds}
+              onSourceChange={(id) => store.setDatasetSource(idx, id)}
+              onTableChange={(t) => store.setDatasetTable(idx, t)}
+              onColumnsChange={(c) => store.setDatasetColumns(idx, c)}
+              onFiltersChange={(f) => store.setDatasetFilters(idx, f)}
+              onFilterLogicChange={(l) => store.setDatasetFilterLogic(idx, l)}
+              onRunUpdate={(runId, status, rowCount, error) =>
+                store.setDatasetRun(idx, runId, status, rowCount, error)
+              }
+              removable={idx >= 2}
+              onRemove={() => store.removeDataset(idx)}
+            />
+          </div>
+        );
+      })}
+
+      {/* Add Dataset button */}
+      <Button
+        variant="outline"
+        className="w-full"
+        onClick={store.addDataset}
+      >
+        <Plus className="mr-2 h-4 w-4" />
+        Add Dataset {String.fromCharCode(65 + store.datasets.length)}
+      </Button>
+
+      {/* Post-join filters — visible when the last join is completed */}
+      {finalRunId && finalColumns.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Post-Join Filters, Sorting & Transforms</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Filters</Label>
+              <FilterBuilder
+                columns={finalColumns}
+                filters={store.postJoinFilters}
+                onChange={store.setPostJoinFilters}
+                filterLogic={store.postJoinFilterLogic}
+                onLogicChange={store.setPostJoinFilterLogic}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Sort</Label>
+              <SortConfigurator
+                columns={finalColumns}
+                sorts={store.postJoinSorts}
+                onChange={store.setPostJoinSorts}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Transforms</Label>
+              <TransformBuilder
+                columns={finalColumns}
+                transforms={store.postJoinTransforms}
+                onChange={store.setPostJoinTransforms}
+              />
+            </div>
+            <Button onClick={handleApplyPostJoin} size="sm" className="w-full">
+              Apply Filters, Sort & Transforms
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Combined results */}
+      {finalRunId && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Combined Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DataTable runId={finalRunId} />
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}

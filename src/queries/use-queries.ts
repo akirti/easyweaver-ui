@@ -1,6 +1,6 @@
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { queriesApi } from '@/api/queries';
-import type { QueryRequest } from '@/types';
+import type { QueryRequest, JoinResultsRequest } from '@/types';
 
 export function useExecuteQuery() {
   return useMutation({
@@ -18,6 +18,12 @@ export function useQueryRun(runId: string | null) {
       if (status === 'pending' || status === 'running') return 1000;
       return false;
     },
+  });
+}
+
+export function useJoinResults() {
+  return useMutation({
+    mutationFn: (request: JoinResultsRequest) => queriesApi.joinResults(request),
   });
 }
 
