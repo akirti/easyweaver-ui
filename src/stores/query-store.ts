@@ -61,7 +61,7 @@ interface QueryState {
 
   // Join step actions (indexed)
   setJoinConfig: (stepIndex: number, config: JoinConfig | null) => void;
-  setJoinResult: (stepIndex: number, runId: string | null, status: JoinStep['status'], rowCount?: number | null, error?: string | null) => void;
+  setJoinResult: (stepIndex: number, runId: string | null, status: JoinStep['status'], rowCount?: number | null, error?: string | null, preservePostJoin?: boolean) => void;
 
   // Post-join
   setPostJoinFilters: (filters: FilterCondition[]) => void;
@@ -171,13 +171,16 @@ export const useQueryStore = create<QueryState>((set) => ({
       joinSteps: s.joinSteps.map((step, i) => (i === stepIndex ? { ...step, config } : step)),
     })),
 
-  setJoinResult: (stepIndex, runId, status, rowCount = null, error = null) =>
+  setJoinResult: (stepIndex, runId, status, rowCount = null, error = null, preservePostJoin = false) =>
     set((s) => {
       const joinSteps = s.joinSteps.map((step, i) =>
         i === stepIndex ? { ...step, runId, status, rowCount, error } : step
       );
       // Invalidate downstream join steps when an upstream join result changes
       const invalidated = invalidateJoinStepsFrom(joinSteps, stepIndex + 1);
+      if (preservePostJoin) {
+        return { joinSteps: invalidated };
+      }
       return { joinSteps: invalidated, postJoinFilters: [], postJoinFilterLogic: 'and' as const, postJoinSorts: [], postJoinTransforms: [] };
     }),
 

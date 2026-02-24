@@ -8,6 +8,8 @@ import { LoginPage } from '@/components/auth/LoginPage';
 import { InteractiveQueryBuilder } from '@/components/query/InteractiveQueryBuilder';
 import { ConnectionList } from '@/components/sources/ConnectionList';
 import { SettingsPage } from '@/components/settings/SettingsPage';
+import { ProcessList } from '@/components/processes/ProcessList';
+import { ProcessRunner } from '@/components/processes/ProcessRunner';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi } from '@/api/auth';
 
@@ -43,6 +45,8 @@ export default function App() {
               <Route element={<AppShell />}>
                 <Route path="/queries" element={<InteractiveQueryBuilder />} />
                 <Route path="/sources" element={<ConnectionList />} />
+                <Route path="/processes" element={<ProcessList />} />
+                <Route path="/processes/:configId" element={<ProcessRunner />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/" element={<Navigate to="/queries" replace />} />
               </Route>

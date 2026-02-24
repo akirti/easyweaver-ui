@@ -4,6 +4,7 @@ import { useAuthStore } from '@/stores/auth-store';
 const titles: Record<string, string> = {
   '/queries': 'Query Explorer',
   '/sources': 'Connections',
+  '/processes': 'Saved Processes',
   '/settings': 'Settings',
 };
 

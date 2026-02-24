@@ -98,8 +98,8 @@ export interface QuerySourceConfig {
 
 export interface JoinConfig {
   join_type: 'inner' | 'left' | 'right' | 'outer';
-  left_on: string;
-  right_on: string;
+  left_on: string | string[];
+  right_on: string | string[];
 }
 
 export interface QueryRequest {
@@ -161,4 +161,106 @@ export interface ApiError {
     message: string;
     details?: unknown;
   };
+}
+
+// Process Configuration types
+export interface ParamDefinition {
+  type: 'string' | 'number' | 'boolean' | 'date' | 'datetime';
+  default?: unknown;
+  label: string;
+}
+
+export interface ProcessFilterConfig {
+  column: string;
+  operator: string;
+  value?: unknown;
+  value2?: unknown;
+}
+
+export interface ProcessQueryConfig {
+  source_id: string;
+  table: string;
+  columns?: string[];
+  filters: ProcessFilterConfig[];
+  filter_logic?: 'and' | 'or';
+}
+
+export interface ProcessLogicStep {
+  key: string;
+  type: 'join';
+  left: string;
+  right: string;
+  join_type: 'inner' | 'left' | 'right' | 'outer';
+  left_on: string[];
+  right_on: string[];
+}
+
+export interface ProcessOperations {
+  filters: ProcessFilterConfig[];
+  filter_logic: 'and' | 'or';
+  sorts: SortSpec[];
+}
+
+export interface ProcessTransformation {
+  column: string;
+  type: string;
+  new_name?: string;
+  date_format?: string;
+  decimals?: number;
+  target_type?: string;
+}
+
+export interface ProcessConfig {
+  queries: Record<string, Record<string, ProcessQueryConfig>>;
+  logics: ProcessLogicStep[];
+  operations?: ProcessOperations;
+  transformations: ProcessTransformation[];
+}
+
+export interface ProcessConfiguration {
+  id: string;
+  user_id: string;
+  name: string;
+  description: string;
+  version: number;
+  config: ProcessConfig;
+  params: Record<string, ParamDefinition>;
+  save_destination: string;
+  gcp_path: string;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProcessConfigurationCreate {
+  name: string;
+  description?: string;
+  params?: Record<string, ParamDefinition>;
+  config: ProcessConfig;
+  save_destination?: 'redis' | 'gcp' | 'both';
+  gcp_path?: string;
+  tags?: string[];
+}
+
+export interface ProcessRunRequest {
+  param_values?: Record<string, unknown>;
+  save_results_to_gcp?: boolean;
+}
+
+export interface ProcessRun {
+  id: string;
+  process_id: string;
+  status: 'pending' | 'running' | 'completed' | 'failed' | 'cancelled';
+  param_values: Record<string, unknown>;
+  row_count: number | null;
+  error: string | null;
+  result_gcp_path: string;
+  result_run_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProcessRunHistory {
+  runs: ProcessRun[];
+  total: number;
 }

@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Loader2, CheckCircle2, XCircle, Combine } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle, Combine, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
@@ -23,6 +23,12 @@ interface Props {
   leftLabel: string;
   rightLabel: string;
   joinStep: JoinStep;
+}
+
+function toArray(val: string | string[] | undefined): string[] {
+  if (!val) return [''];
+  if (Array.isArray(val)) return val.length > 0 ? val : [''];
+  return [val];
 }
 
 export function JoinStepCard({
@@ -65,20 +71,44 @@ export function JoinStepCard({
 
   const config = joinStep.config;
 
-  const setConfig = (updates: Partial<JoinConfig>) => {
+  // Normalize to arrays for multi-pair UI
+  const leftKeys = toArray(config?.left_on);
+  const rightKeys = toArray(config?.right_on);
+  const pairCount = Math.max(leftKeys.length, rightKeys.length);
+  const pairs = Array.from({ length: pairCount }, (_, i) => ({
+    left: leftKeys[i] || '',
+    right: rightKeys[i] || '',
+  }));
+
+  const emitConfig = (newPairs: { left: string; right: string }[], joinType?: JoinConfig['join_type']) => {
     store.setJoinConfig(stepIndex, {
-      join_type: config?.join_type || 'inner',
-      left_on: config?.left_on || '',
-      right_on: config?.right_on || '',
-      ...updates,
+      join_type: joinType || config?.join_type || 'inner',
+      left_on: newPairs.map((p) => p.left),
+      right_on: newPairs.map((p) => p.right),
     });
   };
+
+  const updatePair = (index: number, side: 'left' | 'right', value: string) => {
+    const newPairs = pairs.map((p, i) =>
+      i === index ? { ...p, [side]: value } : p
+    );
+    emitConfig(newPairs);
+  };
+
+  const addPair = () => {
+    emitConfig([...pairs, { left: '', right: '' }]);
+  };
+
+  const removePair = (index: number) => {
+    emitConfig(pairs.filter((_, i) => i !== index));
+  };
+
+  const allPairsFilled = pairs.every((p) => p.left && p.right);
 
   const canJoin =
     !!leftRunId &&
     !!rightRunId &&
-    !!config?.left_on &&
-    !!config?.right_on &&
+    allPairsFilled &&
     joinStep.status !== 'pending' &&
     joinStep.status !== 'running';
 
@@ -104,11 +134,6 @@ export function JoinStepCard({
     }
   };
 
-  // Type mismatch check
-  const leftCol = leftColumns.find((c) => c.name === config?.left_on);
-  const rightCol = rightColumns.find((c) => c.name === config?.right_on);
-  const typeMismatch = leftCol && rightCol && leftCol.type !== rightCol.type;
-
   if (!leftRunId || !rightRunId) {
     return (
       <Card className="border-dashed">
@@ -126,69 +151,93 @@ export function JoinStepCard({
           Join: {leftLabel} + {rightLabel}
         </Label>
 
-        <div className="grid grid-cols-3 gap-3">
-          <div>
-            <Label className="text-xs text-muted-foreground">Join Type</Label>
-            <Select
-              value={config?.join_type || 'inner'}
-              onValueChange={(v) => setConfig({ join_type: v as JoinConfig['join_type'] })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper">
-                <SelectItem value="inner">Inner Join</SelectItem>
-                <SelectItem value="left">Left Join</SelectItem>
-                <SelectItem value="right">Right Join</SelectItem>
-                <SelectItem value="outer">Full Outer Join</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground">Left Key ({leftLabel})</Label>
-            <Select
-              value={config?.left_on || ''}
-              onValueChange={(v) => setConfig({ left_on: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select column" />
-              </SelectTrigger>
-              <SelectContent position="popper" className="max-h-60">
-                {leftColumns.map((col) => (
-                  <SelectItem key={col.name} value={col.name}>
-                    {col.name} ({col.type})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div>
-            <Label className="text-xs text-muted-foreground">Right Key ({rightLabel})</Label>
-            <Select
-              value={config?.right_on || ''}
-              onValueChange={(v) => setConfig({ right_on: v })}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Select column" />
-              </SelectTrigger>
-              <SelectContent position="popper" className="max-h-60">
-                {rightColumns.map((col) => (
-                  <SelectItem key={col.name} value={col.name}>
-                    {col.name} ({col.type})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+        <div>
+          <Label className="text-xs text-muted-foreground">Join Type</Label>
+          <Select
+            value={config?.join_type || 'inner'}
+            onValueChange={(v) => emitConfig(pairs, v as JoinConfig['join_type'])}
+          >
+            <SelectTrigger className="w-48">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent position="popper">
+              <SelectItem value="inner">Inner Join</SelectItem>
+              <SelectItem value="left">Left Join</SelectItem>
+              <SelectItem value="right">Right Join</SelectItem>
+              <SelectItem value="outer">Full Outer Join</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
 
-        {typeMismatch && (
-          <Badge variant="secondary" className="text-amber-600">
-            Type mismatch: {leftCol.type} vs {rightCol.type} (will be auto-coerced to string)
-          </Badge>
-        )}
+        <div className="space-y-2">
+          <Label className="text-xs text-muted-foreground">Column Pairs</Label>
+          {pairs.map((pair, i) => {
+            const leftCol = leftColumns.find((c) => c.name === pair.left);
+            const rightCol = rightColumns.find((c) => c.name === pair.right);
+            const mismatch = leftCol && rightCol && leftCol.type !== rightCol.type;
+
+            return (
+              <div key={i} className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={pair.left || ''}
+                    onValueChange={(v) => updatePair(i, 'left', v)}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder={`${leftLabel} column`} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="max-h-60">
+                      {leftColumns.map((col) => (
+                        <SelectItem key={col.name} value={col.name}>
+                          {col.name} ({col.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  <span className="text-sm text-muted-foreground">=</span>
+
+                  <Select
+                    value={pair.right || ''}
+                    onValueChange={(v) => updatePair(i, 'right', v)}
+                  >
+                    <SelectTrigger className="flex-1">
+                      <SelectValue placeholder={`${rightLabel} column`} />
+                    </SelectTrigger>
+                    <SelectContent position="popper" className="max-h-60">
+                      {rightColumns.map((col) => (
+                        <SelectItem key={col.name} value={col.name}>
+                          {col.name} ({col.type})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+
+                  {pairs.length > 1 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removePair(i)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
+
+                {mismatch && (
+                  <Badge variant="secondary" className="text-amber-600">
+                    Type mismatch: {leftCol.type} vs {rightCol.type} (auto-coerced)
+                  </Badge>
+                )}
+              </div>
+            );
+          })}
+
+          <Button variant="outline" size="sm" onClick={addPair}>
+            <Plus className="mr-1 h-3 w-3" />
+            Add Column Pair
+          </Button>
+        </div>
 
         <Button onClick={handleJoin} disabled={!canJoin} className="w-full">
           {joinRunning ? (

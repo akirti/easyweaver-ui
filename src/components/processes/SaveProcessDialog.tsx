@@ -1,0 +1,334 @@
+import { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Loader2 } from 'lucide-react';
+import { useQueryStore } from '@/stores/query-store';
+import { useCreateProcess } from '@/queries/use-processes';
+import { toast } from 'sonner';
+import { getErrorMessage } from '@/api/client';
+import type {
+  ProcessConfig,
+  ProcessQueryConfig,
+  ProcessLogicStep,
+  ProcessConfigurationCreate,
+  ParamDefinition,
+  ProcessFilterConfig,
+} from '@/types';
+
+interface SaveProcessDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+
+interface ParamCandidate {
+  datasetIndex: number;
+  filterIndex: number;
+  column: string;
+  operator: string;
+  value: unknown;
+  enabled: boolean;
+  paramName: string;
+  paramType: ParamDefinition['type'];
+}
+
+export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps) {
+  const navigate = useNavigate();
+  const store = useQueryStore();
+  const createMutation = useCreateProcess();
+
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [tagsInput, setTagsInput] = useState('');
+  const [saveDestination, setSaveDestination] = useState<'redis' | 'gcp' | 'both'>('redis');
+  const [paramCandidates, setParamCandidates] = useState<ParamCandidate[]>([]);
+  const [initialized, setInitialized] = useState(false);
+
+  // Initialize param candidates from dataset filters when dialog opens
+  if (open && !initialized) {
+    const candidates: ParamCandidate[] = [];
+    store.datasets.forEach((ds, dsIdx) => {
+      ds.filters.forEach((f, fIdx) => {
+        if (f.value !== undefined && f.value !== null && f.value !== '') {
+          candidates.push({
+            datasetIndex: dsIdx,
+            filterIndex: fIdx,
+            column: f.column,
+            operator: f.operator,
+            value: f.value,
+            enabled: false,
+            paramName: `${f.column}_${dsIdx}`,
+            paramType: typeof f.value === 'number' ? 'number' : 'string',
+          });
+        }
+      });
+    });
+    setParamCandidates(candidates);
+    setInitialized(true);
+  }
+
+  // Reset state when dialog closes
+  const handleOpenChange = (v: boolean) => {
+    if (!v) {
+      setName('');
+      setDescription('');
+      setTagsInput('');
+      setSaveDestination('redis');
+      setParamCandidates([]);
+      setInitialized(false);
+    }
+    onOpenChange(v);
+  };
+
+  const toggleCandidate = (idx: number) => {
+    setParamCandidates((prev) =>
+      prev.map((c, i) => (i === idx ? { ...c, enabled: !c.enabled } : c))
+    );
+  };
+
+  const updateCandidateName = (idx: number, paramName: string) => {
+    setParamCandidates((prev) =>
+      prev.map((c, i) => (i === idx ? { ...c, paramName } : c))
+    );
+  };
+
+  // Build ProcessConfig from current query store state
+  const buildConfig = useMemo((): ProcessConfig => {
+    const queries: Record<string, Record<string, ProcessQueryConfig>> = {};
+
+    store.datasets.forEach((ds, idx) => {
+      if (!ds.sourceId || !ds.table) return;
+      const sourceKey = `source_${idx}`;
+      const queryKey = `query_${idx}`;
+
+      const filters: ProcessFilterConfig[] = ds.filters.map((f, fIdx) => {
+        const candidate = paramCandidates.find(
+          (c) => c.datasetIndex === idx && c.filterIndex === fIdx && c.enabled
+        );
+        return {
+          column: f.column,
+          operator: f.operator,
+          value: candidate ? `{${candidate.paramName}}` : f.value,
+          value2: f.value2,
+        };
+      });
+
+      if (!queries[sourceKey]) queries[sourceKey] = {};
+      queries[sourceKey][queryKey] = {
+        source_id: ds.sourceId,
+        table: ds.table,
+        columns: ds.columns.length > 0 ? ds.columns : undefined,
+        filters,
+        filter_logic: ds.filterLogic,
+      };
+    });
+
+    const logics: ProcessLogicStep[] = store.joinSteps
+      .map((step, idx) => {
+        if (!step.config) return null;
+        return {
+          key: `join_${idx}`,
+          type: 'join' as const,
+          left: idx === 0 ? `source_0.query_0` : `join_${idx - 1}`,
+          right: `source_${idx + 1}.query_${idx + 1}`,
+          join_type: step.config.join_type,
+          left_on: Array.isArray(step.config.left_on)
+            ? step.config.left_on
+            : [step.config.left_on],
+          right_on: Array.isArray(step.config.right_on)
+            ? step.config.right_on
+            : [step.config.right_on],
+        };
+      })
+      .filter((x): x is ProcessLogicStep => x !== null);
+
+    const operations =
+      store.postJoinFilters.length > 0 || store.postJoinSorts.length > 0
+        ? {
+            filters: store.postJoinFilters.map((f) => ({
+              column: f.column,
+              operator: f.operator,
+              value: f.value,
+              value2: f.value2,
+            })),
+            filter_logic: store.postJoinFilterLogic,
+            sorts: store.postJoinSorts,
+          }
+        : undefined;
+
+    const transformations = store.postJoinTransforms.map((t) => ({
+      column: t.column,
+      type: t.type,
+      new_name: t.new_name,
+      date_format: t.date_format,
+      decimals: t.decimals,
+      target_type: t.target_type,
+    }));
+
+    return { queries, logics, operations, transformations };
+  }, [store.datasets, store.joinSteps, store.postJoinFilters, store.postJoinFilterLogic, store.postJoinSorts, store.postJoinTransforms, paramCandidates]);
+
+  const handleSubmit = async () => {
+    if (!name.trim()) {
+      toast.error('Name is required');
+      return;
+    }
+
+    const params: Record<string, ParamDefinition> = {};
+    for (const c of paramCandidates) {
+      if (c.enabled) {
+        params[c.paramName] = {
+          type: c.paramType,
+          default: c.value,
+          label: c.column,
+        };
+      }
+    }
+
+    const tags = tagsInput
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean);
+
+    const data: ProcessConfigurationCreate = {
+      name: name.trim(),
+      description: description.trim() || undefined,
+      config: buildConfig,
+      params: Object.keys(params).length > 0 ? params : undefined,
+      save_destination: saveDestination,
+      tags: tags.length > 0 ? tags : undefined,
+    };
+
+    try {
+      await createMutation.mutateAsync(data);
+      toast.success('Process saved');
+      handleOpenChange(false);
+      navigate('/processes');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Save as Process</DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="process-name">Name *</Label>
+            <Input
+              id="process-name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="My data pipeline"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="process-desc">Description</Label>
+            <Textarea
+              id="process-desc"
+              value={description}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDescription(e.target.value)}
+              placeholder="Optional description..."
+              rows={2}
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label htmlFor="process-tags">Tags (comma-separated)</Label>
+            <Input
+              id="process-tags"
+              value={tagsInput}
+              onChange={(e) => setTagsInput(e.target.value)}
+              placeholder="etl, daily, sales"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Save Destination</Label>
+            <RadioGroup
+              value={saveDestination}
+              onValueChange={(v: string) => setSaveDestination(v as 'redis' | 'gcp' | 'both')}
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="redis" id="dest-redis" />
+                <Label htmlFor="dest-redis" className="font-normal">
+                  Redis only
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="gcp" id="dest-gcp" />
+                <Label htmlFor="dest-gcp" className="font-normal">
+                  GCP
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="both" id="dest-both" />
+                <Label htmlFor="dest-both" className="font-normal">
+                  Both
+                </Label>
+              </div>
+            </RadioGroup>
+          </div>
+
+          {paramCandidates.length > 0 && (
+            <div className="space-y-2">
+              <Label>Parameterize Filter Values</Label>
+              <div className="space-y-2 rounded-md border p-3">
+                {paramCandidates.map((c, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-3 text-sm"
+                  >
+                    <Switch
+                      checked={c.enabled}
+                      onCheckedChange={() => toggleCandidate(idx)}
+                    />
+                    <span className="text-muted-foreground">
+                      {c.column} {c.operator} {String(c.value)}
+                    </span>
+                    {c.enabled && (
+                      <Input
+                        className="h-7 w-36"
+                        value={c.paramName}
+                        onChange={(e) => updateCandidateName(idx, e.target.value)}
+                        placeholder="param name"
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => handleOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={createMutation.isPending}>
+            {createMutation.isPending && (
+              <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+            )}
+            Save Process
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}

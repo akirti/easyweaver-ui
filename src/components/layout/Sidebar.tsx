@@ -1,10 +1,11 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Database, Search, Settings, LogOut } from 'lucide-react';
+import { Database, Search, PlayCircle, Settings, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 
 const navItems = [
   { to: '/queries', label: 'Query Explorer', icon: Search },
   { to: '/sources', label: 'Connections', icon: Database },
+  { to: '/processes', label: 'Saved Processes', icon: PlayCircle },
 ];
 
 export function Sidebar() {

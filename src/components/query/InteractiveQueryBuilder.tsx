@@ -1,4 +1,5 @@
-import { Plus } from 'lucide-react';
+import { useState } from 'react';
+import { Plus, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +9,7 @@ import { FilterBuilder } from './FilterBuilder';
 import { SortConfigurator } from './SortConfigurator';
 import { TransformBuilder } from './TransformBuilder';
 import { DataTable } from '@/components/results/DataTable';
+import { SaveProcessDialog } from '@/components/processes/SaveProcessDialog';
 import { useQueryStore } from '@/stores/query-store';
 import { useQueryResults, useJoinResults } from '@/queries/use-queries';
 import { toast } from 'sonner';
@@ -16,6 +18,7 @@ import type { JoinResultsRequest, ColumnInfo } from '@/types';
 export function InteractiveQueryBuilder() {
   const store = useQueryStore();
   const joinMutation = useJoinResults();
+  const [saveDialogOpen, setSaveDialogOpen] = useState(false);
 
   // Find the last completed join step for final results
   const lastJoinIndex = store.joinSteps.length - 1;
@@ -68,7 +71,7 @@ export function InteractiveQueryBuilder() {
 
     try {
       const run = await joinMutation.mutateAsync(request);
-      store.setJoinResult(lastJoinIndex, run.id, 'pending');
+      store.setJoinResult(lastJoinIndex, run.id, 'pending', null, null, true);
     } catch {
       toast.error('Failed to apply filters');
     }
@@ -115,15 +118,24 @@ export function InteractiveQueryBuilder() {
         );
       })}
 
-      {/* Add Dataset button */}
-      <Button
-        variant="outline"
-        className="w-full"
-        onClick={store.addDataset}
-      >
-        <Plus className="mr-2 h-4 w-4" />
-        Add Dataset {String.fromCharCode(65 + store.datasets.length)}
-      </Button>
+      {/* Add Dataset / Save buttons */}
+      <div className="flex gap-3">
+        <Button
+          variant="outline"
+          className="flex-1"
+          onClick={store.addDataset}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Add Dataset {String.fromCharCode(65 + store.datasets.length)}
+        </Button>
+        {finalRunId && (
+          <Button variant="outline" onClick={() => setSaveDialogOpen(true)}>
+            <Save className="mr-2 h-4 w-4" />
+            Save as Process
+          </Button>
+        )}
+      </div>
+      <SaveProcessDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} />
 
       {/* Post-join filters — visible when the last join is completed */}
       {finalRunId && finalColumns.length > 0 && (
