@@ -16,6 +16,8 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Loader2 } from 'lucide-react';
 import { useQueryStore } from '@/stores/query-store';
 import { useCreateProcess } from '@/queries/use-processes';
+import { useSourceSchema } from '@/queries/use-sources';
+import { getTypeCategory } from '@/lib/column-types';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/api/client';
 import type {
@@ -25,6 +27,7 @@ import type {
   ProcessConfigurationCreate,
   ParamDefinition,
   ProcessFilterConfig,
+  ColumnInfo,
 } from '@/types';
 
 interface SaveProcessDialogProps {
@@ -43,10 +46,53 @@ interface ParamCandidate {
   paramType: ParamDefinition['type'];
 }
 
+function categoryToParamType(category: string): ParamDefinition['type'] {
+  switch (category) {
+    case 'numeric': return 'number';
+    case 'datetime': return 'datetime';
+    case 'boolean': return 'boolean';
+    default: return 'string';
+  }
+}
+
 export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps) {
   const navigate = useNavigate();
   const store = useQueryStore();
   const createMutation = useCreateProcess();
+
+  // Fetch schemas for all datasets so we can infer column types
+  const sourceIds = useMemo(
+    () => [...new Set(store.datasets.map((ds) => ds.sourceId).filter(Boolean))] as string[],
+    [store.datasets]
+  );
+  // Fetch up to 4 source schemas (hooks must be called unconditionally)
+  const schema0 = useSourceSchema(sourceIds[0] || '');
+  const schema1 = useSourceSchema(sourceIds[1] || '');
+  const schema2 = useSourceSchema(sourceIds[2] || '');
+  const schema3 = useSourceSchema(sourceIds[3] || '');
+  const schemaMap = useMemo(() => {
+    const map: Record<string, ColumnInfo[]> = {};
+    const results = [schema0, schema1, schema2, schema3];
+    sourceIds.forEach((id, i) => {
+      const tables = results[i]?.data;
+      if (tables) {
+        for (const t of tables) {
+          for (const col of t.columns) {
+            map[`${id}:${t.name}:${col.name}`] = [col];
+          }
+        }
+      }
+    });
+    return map;
+  }, [sourceIds, schema0.data, schema1.data, schema2.data, schema3.data]);
+
+  const getColumnType = (sourceId: string, table: string, column: string): ParamDefinition['type'] => {
+    const cols = schemaMap[`${sourceId}:${table}:${column}`];
+    if (cols && cols.length > 0) {
+      return categoryToParamType(getTypeCategory(cols[0].type));
+    }
+    return 'string';
+  };
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
@@ -61,6 +107,9 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
     store.datasets.forEach((ds, dsIdx) => {
       ds.filters.forEach((f, fIdx) => {
         if (f.value !== undefined && f.value !== null && f.value !== '') {
+          const inferredType = ds.sourceId && ds.table
+            ? getColumnType(ds.sourceId, ds.table, f.column)
+            : (typeof f.value === 'number' ? 'number' : 'string');
           candidates.push({
             datasetIndex: dsIdx,
             filterIndex: fIdx,
@@ -69,7 +118,7 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
             value: f.value,
             enabled: false,
             paramName: `${f.column}_${dsIdx}`,
-            paramType: typeof f.value === 'number' ? 'number' : 'string',
+            paramType: inferredType,
           });
         }
       });
