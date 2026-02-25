@@ -65,6 +65,7 @@ export function JoinStepCard({
         joinRun.status as JoinStep['status'],
         joinRun.row_count,
         joinRun.error,
+        true,
       );
     }
   }, [joinRun?.status, joinRun?.row_count]);
