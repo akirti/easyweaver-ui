@@ -13,6 +13,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   useProcessRunHistory,
+  useProcessRunResults,
   useSaveResultsToGcp,
   useReloadFromGcp,
 } from '@/queries/use-processes';
@@ -147,10 +148,15 @@ export function RunHistory({ configId }: RunHistoryProps) {
                   </div>
                 </TableCell>
               </TableRow>
-              {expandedRunId === run.id && run.result_run_id && (
+              {expandedRunId === run.id && run.status === 'completed' && (
                 <TableRow key={`${run.id}-results`}>
                   <TableCell colSpan={5} className="p-4">
-                    <DataTable runId={run.result_run_id} compact />
+                    <DataTable
+                      runId={run.id}
+                      compact
+                      useResults={useProcessRunResults}
+                      hideExport
+                    />
                   </TableCell>
                 </TableRow>
               )}

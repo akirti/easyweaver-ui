@@ -17,19 +17,28 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 import { useQueryResults } from '@/queries/use-queries';
 import { queriesApi } from '@/api/queries';
+import type { QueryResults } from '@/types';
+
+type ResultsFetcher = (
+  runId: string | null,
+  params: { page?: number; page_size?: number; sort_column?: string; sort_direction?: string }
+) => { data: QueryResults | undefined; isLoading: boolean };
 
 interface Props {
   runId: string;
   compact?: boolean;
+  useResults?: ResultsFetcher;
+  hideExport?: boolean;
 }
 
-export function DataTable({ runId, compact }: Props) {
+export function DataTable({ runId, compact, useResults, hideExport }: Props) {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(compact ? 10 : 50);
   const [sortColumn, setSortColumn] = useState<string | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
-  const { data, isLoading } = useQueryResults(runId, {
+  const fetchResults = useResults || useQueryResults;
+  const { data, isLoading } = fetchResults(runId, {
     page,
     page_size: pageSize,
     sort_column: sortColumn || undefined,
@@ -112,10 +121,12 @@ export function DataTable({ runId, compact }: Props) {
             Showing {(page - 1) * pageSize + 1}-{Math.min(page * pageSize, data.total)} of{' '}
             {data.total.toLocaleString()} rows
           </span>
-          <Button variant="outline" size="sm" onClick={() => queriesApi.exportCsv(runId)}>
-            <Download className="mr-1 h-3 w-3" />
-            Export CSV
-          </Button>
+          {!hideExport && (
+            <Button variant="outline" size="sm" onClick={() => queriesApi.exportCsv(runId)}>
+              <Download className="mr-1 h-3 w-3" />
+              Export CSV
+            </Button>
+          )}
         </div>
       )}
 

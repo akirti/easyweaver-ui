@@ -10,6 +10,7 @@ import {
   useProcessConfiguration,
   useRunProcess,
   useProcessRun,
+  useProcessRunResults,
   useSaveResultsToGcp,
 } from '@/queries/use-processes';
 import { ParamForm } from './ParamForm';
@@ -183,8 +184,12 @@ export function ProcessRunner() {
             </div>
           )}
 
-          {activeRun?.status === 'completed' && activeRun.result_run_id && (
-            <DataTable runId={activeRun.result_run_id} />
+          {activeRun?.status === 'completed' && (
+            <DataTable
+              runId={activeRun.id}
+              useResults={useProcessRunResults}
+              hideExport
+            />
           )}
         </TabsContent>
 
