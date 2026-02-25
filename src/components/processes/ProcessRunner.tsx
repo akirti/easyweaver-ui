@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Play, Loader2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -35,6 +35,26 @@ export function ProcessRunner() {
 
   const [paramValues, setParamValues] = useState<Record<string, unknown>>({});
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
+
+  // Initialize param values from defaults when config loads
+  useEffect(() => {
+    if (config?.params) {
+      const defaults: Record<string, unknown> = {};
+      for (const [key, param] of Object.entries(config.params)) {
+        if (param.default !== undefined && param.default !== null) {
+          defaults[key] = param.default;
+        }
+      }
+      setParamValues((prev) => {
+        // Only set defaults for keys not already set by user
+        const merged = { ...defaults };
+        for (const [k, v] of Object.entries(prev)) {
+          if (v !== undefined && v !== '') merged[k] = v;
+        }
+        return merged;
+      });
+    }
+  }, [config?.params]);
 
   const { data: activeRun } = useProcessRun(activeRunId);
 
