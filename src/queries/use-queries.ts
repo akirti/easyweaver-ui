@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, keepPreviousData } from '@tanstack/react-query';
 import { queriesApi } from '@/api/queries';
 import type { QueryRequest, JoinResultsRequest } from '@/types';
 
@@ -35,5 +35,6 @@ export function useQueryResults(
     queryKey: ['queryResults', runId, params],
     queryFn: () => queriesApi.getResults(runId!, params),
     enabled: !!runId,
+    placeholderData: keepPreviousData,
   });
 }

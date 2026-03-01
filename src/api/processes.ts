@@ -42,4 +42,7 @@ export const processesApi = {
     client
       .post<{ status: string; row_count: number }>(`/processes/runs/${runId}/reload`)
       .then((r) => r.data),
+
+  refreshCredentials: (configId: string) =>
+    client.post<ProcessConfiguration>(`/processes/${configId}/refresh-credentials`).then((r) => r.data),
 };

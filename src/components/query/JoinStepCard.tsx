@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { Loader2, CheckCircle2, XCircle, Combine, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Select,
@@ -115,6 +116,38 @@ export function JoinStepCard({
 
   const joinRunning = joinStep.status === 'pending' || joinStep.status === 'running';
 
+  // Fetch join result columns for column selection
+  const { data: joinResultData } = useQueryResults(
+    joinStep.status === 'completed' ? joinStep.runId : null,
+    { page: 1, page_size: 1 }
+  );
+  const joinResultColumns: ColumnInfo[] = (joinResultData?.columns || []).map((c) => ({
+    name: c.name, type: c.type, nullable: true, primary_key: false,
+  }));
+
+  const selectColumns = joinStep.selectColumns;
+  const allJoinCols = joinResultColumns.map((c) => c.name);
+
+  const toggleSelectColumn = (col: string) => {
+    if (selectColumns.includes(col)) {
+      // Don't allow deselecting all
+      if (selectColumns.length > 1) {
+        store.setJoinSelectColumns(stepIndex, selectColumns.filter((c) => c !== col));
+      }
+    } else {
+      store.setJoinSelectColumns(stepIndex, [...selectColumns, col]);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectColumns.length === allJoinCols.length) {
+      // Keep just the first column
+      store.setJoinSelectColumns(stepIndex, [allJoinCols[0]]);
+    } else {
+      store.setJoinSelectColumns(stepIndex, allJoinCols);
+    }
+  };
+
   const handleJoin = async () => {
     if (!leftRunId || !rightRunId || !config) return;
 
@@ -122,6 +155,9 @@ export function JoinStepCard({
       left_run_id: leftRunId,
       right_run_id: rightRunId,
       join: config,
+      select_columns: selectColumns.length > 0 && selectColumns.length < allJoinCols.length
+        ? selectColumns
+        : undefined,
       filters: [],
       sort: [],
       transforms: [],
@@ -265,6 +301,44 @@ export function JoinStepCard({
             <XCircle className="h-4 w-4" />
             {joinStep.error || 'Join failed'}
           </span>
+        )}
+
+        {/* Column selection after successful join */}
+        {joinStep.status === 'completed' && joinResultColumns.length > 0 && (
+          <div className="space-y-1.5 rounded-md border p-3">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs text-muted-foreground">Select Columns</Label>
+              <button
+                type="button"
+                onClick={toggleSelectAll}
+                className="text-xs text-primary underline"
+              >
+                {selectColumns.length === allJoinCols.length ? 'Deselect All' : 'Select All'}
+              </button>
+              {selectColumns.length > 0 && selectColumns.length < allJoinCols.length && (
+                <span className="text-xs text-muted-foreground">
+                  ({selectColumns.length}/{allJoinCols.length})
+                </span>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              {joinResultColumns.map((col) => (
+                <label
+                  key={col.name}
+                  className="flex items-center gap-1.5 text-xs cursor-pointer"
+                >
+                  <Checkbox
+                    checked={selectColumns.length === 0 || selectColumns.includes(col.name)}
+                    onCheckedChange={() => toggleSelectColumn(col.name)}
+                  />
+                  <span className={col.name.endsWith('_right') ? 'text-blue-600' : ''}>
+                    {col.name}
+                  </span>
+                  <span className="text-muted-foreground">({col.type})</span>
+                </label>
+              ))}
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>

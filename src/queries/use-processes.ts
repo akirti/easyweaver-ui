@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import { processesApi } from '@/api/processes';
 import type { ProcessConfigurationCreate, ProcessRunRequest } from '@/types';
 
@@ -66,6 +66,7 @@ export function useProcessRunResults(
     queryKey: ['processRunResults', runId, params],
     queryFn: () => processesApi.getRunResults(runId!, params),
     enabled: !!runId,
+    placeholderData: keepPreviousData,
   });
 }
 
@@ -88,5 +89,16 @@ export function useReloadFromGcp() {
   return useMutation({
     mutationFn: (runId: string) => processesApi.reloadFromGcp(runId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['processRunResults'] }),
+  });
+}
+
+export function useRefreshCredentials() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (configId: string) => processesApi.refreshCredentials(configId),
+    onSuccess: (_data, configId) => {
+      qc.invalidateQueries({ queryKey: ['processes'] });
+      qc.invalidateQueries({ queryKey: ['processes', configId] });
+    },
   });
 }

@@ -1,8 +1,9 @@
 import { NavLink, useNavigate } from 'react-router-dom';
-import { Database, Search, PlayCircle, Settings, LogOut } from 'lucide-react';
+import { BarChart3, Database, Search, PlayCircle, Settings, LogOut } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth-store';
 
 const navItems = [
+  { to: '/dashboard', label: 'Dashboard', icon: BarChart3 },
   { to: '/queries', label: 'Query Explorer', icon: Search },
   { to: '/sources', label: 'Connections', icon: Database },
   { to: '/processes', label: 'Saved Processes', icon: PlayCircle },

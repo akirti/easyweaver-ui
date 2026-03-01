@@ -1,5 +1,13 @@
 import { create } from 'zustand';
-import type { FilterCondition, SortSpec, JoinConfig, TransformSpec } from '@/types';
+import type {
+  FilterCondition,
+  SortSpec,
+  JoinConfig,
+  TransformSpec,
+  GroupBySpec,
+  DistinctSpec,
+  DerivedColumnSpec,
+} from '@/types';
 
 export interface DatasetState {
   sourceId: string | null;
@@ -15,6 +23,7 @@ export interface DatasetState {
 
 export interface JoinStep {
   config: JoinConfig | null;
+  selectColumns: string[];
   runId: string | null;
   status: 'idle' | 'pending' | 'running' | 'completed' | 'failed';
   rowCount: number | null;
@@ -35,10 +44,21 @@ const createDataset = (): DatasetState => ({
 
 const createJoinStep = (): JoinStep => ({
   config: null,
+  selectColumns: [],
   runId: null,
   status: 'idle',
   rowCount: null,
   error: null,
+});
+
+const clearPostJoin = () => ({
+  postJoinFilters: [] as FilterCondition[],
+  postJoinFilterLogic: 'and' as const,
+  postJoinSorts: [] as SortSpec[],
+  postJoinTransforms: [] as TransformSpec[],
+  postJoinGroupBy: null as GroupBySpec | null,
+  postJoinDistinct: null as DistinctSpec | null,
+  postJoinDerivedColumns: [] as DerivedColumnSpec[],
 });
 
 interface QueryState {
@@ -48,6 +68,9 @@ interface QueryState {
   postJoinFilterLogic: 'and' | 'or';
   postJoinSorts: SortSpec[];
   postJoinTransforms: TransformSpec[];
+  postJoinGroupBy: GroupBySpec | null;
+  postJoinDistinct: DistinctSpec | null;
+  postJoinDerivedColumns: DerivedColumnSpec[];
 
   // Dataset actions (indexed)
   addDataset: () => void;
@@ -61,6 +84,7 @@ interface QueryState {
 
   // Join step actions (indexed)
   setJoinConfig: (stepIndex: number, config: JoinConfig | null) => void;
+  setJoinSelectColumns: (stepIndex: number, columns: string[]) => void;
   setJoinResult: (stepIndex: number, runId: string | null, status: JoinStep['status'], rowCount?: number | null, error?: string | null, preservePostJoin?: boolean) => void;
 
   // Post-join
@@ -68,6 +92,9 @@ interface QueryState {
   setPostJoinFilterLogic: (logic: 'and' | 'or') => void;
   setPostJoinSorts: (sorts: SortSpec[]) => void;
   setPostJoinTransforms: (transforms: TransformSpec[]) => void;
+  setPostJoinGroupBy: (spec: GroupBySpec | null) => void;
+  setPostJoinDistinct: (spec: DistinctSpec | null) => void;
+  setPostJoinDerivedColumns: (cols: DerivedColumnSpec[]) => void;
 
   reset: () => void;
 }
@@ -86,6 +113,9 @@ export const useQueryStore = create<QueryState>((set) => ({
   postJoinFilterLogic: 'and',
   postJoinSorts: [],
   postJoinTransforms: [],
+  postJoinGroupBy: null,
+  postJoinDistinct: null,
+  postJoinDerivedColumns: [],
 
   // --- Dataset actions ---
 
@@ -99,20 +129,9 @@ export const useQueryStore = create<QueryState>((set) => ({
     set((s) => {
       if (s.datasets.length <= 2 || index < 2) return s; // can't remove first two
       const datasets = s.datasets.filter((_, i) => i !== index);
-      // Remove the join step that connected this dataset
-      // joinSteps[i] connects result-of-(i-1) with dataset[i+1]
-      // When removing dataset[index], we remove joinSteps[index-1]
       const joinSteps = s.joinSteps.filter((_, i) => i !== index - 1);
-      // Invalidate from the removed position onwards
       const invalidated = invalidateJoinStepsFrom(joinSteps, Math.max(0, index - 1));
-      return {
-        datasets,
-        joinSteps: invalidated,
-        postJoinFilters: [],
-        postJoinFilterLogic: 'and' as const,
-        postJoinSorts: [],
-        postJoinTransforms: [],
-      };
+      return { datasets, joinSteps: invalidated, ...clearPostJoin() };
     }),
 
   setDatasetSource: (index, sourceId) =>
@@ -120,10 +139,9 @@ export const useQueryStore = create<QueryState>((set) => ({
       const datasets = s.datasets.map((ds, i) =>
         i === index ? { ...createDataset(), sourceId } : ds
       );
-      // Invalidate join steps involving this dataset
       const joinFrom = Math.max(0, index - 1);
       const joinSteps = invalidateJoinStepsFrom(s.joinSteps, joinFrom);
-      return { datasets, joinSteps, postJoinFilters: [], postJoinFilterLogic: 'and' as const, postJoinSorts: [], postJoinTransforms: [] };
+      return { datasets, joinSteps, ...clearPostJoin() };
     }),
 
   setDatasetTable: (index, table) =>
@@ -135,7 +153,7 @@ export const useQueryStore = create<QueryState>((set) => ({
       );
       const joinFrom = Math.max(0, index - 1);
       const joinSteps = invalidateJoinStepsFrom(s.joinSteps, joinFrom);
-      return { datasets, joinSteps, postJoinFilters: [], postJoinFilterLogic: 'and' as const, postJoinSorts: [], postJoinTransforms: [] };
+      return { datasets, joinSteps, ...clearPostJoin() };
     }),
 
   setDatasetColumns: (index, columns) =>
@@ -158,10 +176,9 @@ export const useQueryStore = create<QueryState>((set) => ({
       const datasets = s.datasets.map((ds, i) =>
         i === index ? { ...ds, runId, status, rowCount, error } : ds
       );
-      // Invalidate downstream join steps when a dataset reruns
       const joinFrom = Math.max(0, index - 1);
       const joinSteps = invalidateJoinStepsFrom(s.joinSteps, joinFrom);
-      return { datasets, joinSteps, postJoinFilters: [], postJoinFilterLogic: 'and' as const, postJoinSorts: [], postJoinTransforms: [] };
+      return { datasets, joinSteps, ...clearPostJoin() };
     }),
 
   // --- Join step actions ---
@@ -171,17 +188,23 @@ export const useQueryStore = create<QueryState>((set) => ({
       joinSteps: s.joinSteps.map((step, i) => (i === stepIndex ? { ...step, config } : step)),
     })),
 
+  setJoinSelectColumns: (stepIndex, columns) =>
+    set((s) => ({
+      joinSteps: s.joinSteps.map((step, i) =>
+        i === stepIndex ? { ...step, selectColumns: columns } : step
+      ),
+    })),
+
   setJoinResult: (stepIndex, runId, status, rowCount = null, error = null, preservePostJoin = false) =>
     set((s) => {
       const joinSteps = s.joinSteps.map((step, i) =>
         i === stepIndex ? { ...step, runId, status, rowCount, error } : step
       );
-      // Invalidate downstream join steps when an upstream join result changes
       const invalidated = invalidateJoinStepsFrom(joinSteps, stepIndex + 1);
       if (preservePostJoin) {
         return { joinSteps: invalidated };
       }
-      return { joinSteps: invalidated, postJoinFilters: [], postJoinFilterLogic: 'and' as const, postJoinSorts: [], postJoinTransforms: [] };
+      return { joinSteps: invalidated, ...clearPostJoin() };
     }),
 
   // --- Post-join ---
@@ -190,14 +213,14 @@ export const useQueryStore = create<QueryState>((set) => ({
   setPostJoinFilterLogic: (logic) => set({ postJoinFilterLogic: logic }),
   setPostJoinSorts: (sorts) => set({ postJoinSorts: sorts }),
   setPostJoinTransforms: (transforms) => set({ postJoinTransforms: transforms }),
+  setPostJoinGroupBy: (spec) => set({ postJoinGroupBy: spec }),
+  setPostJoinDistinct: (spec) => set({ postJoinDistinct: spec }),
+  setPostJoinDerivedColumns: (cols) => set({ postJoinDerivedColumns: cols }),
 
   reset: () =>
     set({
       datasets: [createDataset(), createDataset()],
       joinSteps: [createJoinStep()],
-      postJoinFilters: [],
-      postJoinFilterLogic: 'and' as const,
-      postJoinSorts: [],
-      postJoinTransforms: [],
+      ...clearPostJoin(),
     }),
 }));

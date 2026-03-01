@@ -10,6 +10,7 @@ import { ConnectionList } from '@/components/sources/ConnectionList';
 import { SettingsPage } from '@/components/settings/SettingsPage';
 import { ProcessList } from '@/components/processes/ProcessList';
 import { ProcessRunner } from '@/components/processes/ProcessRunner';
+import { DashboardPage } from '@/components/dashboard/DashboardPage';
 import { useAuthStore } from '@/stores/auth-store';
 import { authApi } from '@/api/auth';
 
@@ -43,6 +44,7 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route element={<AuthGuard />}>
               <Route element={<AppShell />}>
+                <Route path="/dashboard" element={<DashboardPage />} />
                 <Route path="/queries" element={<InteractiveQueryBuilder />} />
                 <Route path="/sources" element={<ConnectionList />} />
                 <Route path="/processes" element={<ProcessList />} />

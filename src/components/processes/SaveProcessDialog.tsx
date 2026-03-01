@@ -36,6 +36,7 @@ interface SaveProcessDialogProps {
 }
 
 interface ParamCandidate {
+  source: 'dataset' | 'postjoin';
   datasetIndex: number;
   filterIndex: number;
   column: string;
@@ -101,7 +102,7 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
   const [paramCandidates, setParamCandidates] = useState<ParamCandidate[]>([]);
   const [initialized, setInitialized] = useState(false);
 
-  // Initialize param candidates from dataset filters when dialog opens
+  // Initialize param candidates from dataset filters AND post-join filters
   if (open && !initialized) {
     const candidates: ParamCandidate[] = [];
     store.datasets.forEach((ds, dsIdx) => {
@@ -111,6 +112,7 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
             ? getColumnType(ds.sourceId, ds.table, f.column)
             : (typeof f.value === 'number' ? 'number' : 'string');
           candidates.push({
+            source: 'dataset',
             datasetIndex: dsIdx,
             filterIndex: fIdx,
             column: f.column,
@@ -122,6 +124,22 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
           });
         }
       });
+    });
+    // Post-join filters
+    store.postJoinFilters.forEach((f, fIdx) => {
+      if (f.value !== undefined && f.value !== null && f.value !== '') {
+        candidates.push({
+          source: 'postjoin',
+          datasetIndex: -1,
+          filterIndex: fIdx,
+          column: f.column,
+          operator: f.operator,
+          value: f.value,
+          enabled: false,
+          paramName: `pj_${f.column}`,
+          paramType: typeof f.value === 'number' ? 'number' : 'string',
+        });
+      }
     });
     setParamCandidates(candidates);
     setInitialized(true);
@@ -163,7 +181,7 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
 
       const filters: ProcessFilterConfig[] = ds.filters.map((f, fIdx) => {
         const candidate = paramCandidates.find(
-          (c) => c.datasetIndex === idx && c.filterIndex === fIdx && c.enabled
+          (c) => c.source === 'dataset' && c.datasetIndex === idx && c.filterIndex === fIdx && c.enabled
         );
         return {
           column: f.column,
@@ -186,7 +204,7 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
     const logics: ProcessLogicStep[] = store.joinSteps
       .map((step, idx) => {
         if (!step.config) return null;
-        return {
+        const logic: ProcessLogicStep = {
           key: `join_${idx}`,
           type: 'join' as const,
           left: idx === 0 ? `source_0.query_0` : `join_${idx - 1}`,
@@ -199,22 +217,38 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
             ? step.config.right_on
             : [step.config.right_on],
         };
+        if (step.selectColumns.length > 0) {
+          logic.select_columns = step.selectColumns;
+        }
+        return logic;
       })
       .filter((x): x is ProcessLogicStep => x !== null);
 
-    const operations =
-      store.postJoinFilters.length > 0 || store.postJoinSorts.length > 0
-        ? {
-            filters: store.postJoinFilters.map((f) => ({
+    const hasOperations =
+      store.postJoinFilters.length > 0 ||
+      store.postJoinSorts.length > 0 ||
+      store.postJoinGroupBy !== null ||
+      store.postJoinDistinct !== null;
+
+    const operations = hasOperations
+      ? {
+          filters: store.postJoinFilters.map((f, fIdx) => {
+            const candidate = paramCandidates.find(
+              (c) => c.source === 'postjoin' && c.filterIndex === fIdx && c.enabled
+            );
+            return {
               column: f.column,
               operator: f.operator,
-              value: f.value,
+              value: candidate ? `{${candidate.paramName}}` : f.value,
               value2: f.value2,
-            })),
-            filter_logic: store.postJoinFilterLogic,
-            sorts: store.postJoinSorts,
-          }
-        : undefined;
+            };
+          }),
+          filter_logic: store.postJoinFilterLogic,
+          group_by: store.postJoinGroupBy || undefined,
+          distinct: store.postJoinDistinct || undefined,
+          sorts: store.postJoinSorts,
+        }
+      : undefined;
 
     const transformations = store.postJoinTransforms.map((t) => ({
       column: t.column,
@@ -225,8 +259,12 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
       target_type: t.target_type,
     }));
 
-    return { queries, logics, operations, transformations };
-  }, [store.datasets, store.joinSteps, store.postJoinFilters, store.postJoinFilterLogic, store.postJoinSorts, store.postJoinTransforms, paramCandidates]);
+    const derived_columns = store.postJoinDerivedColumns.length > 0
+      ? store.postJoinDerivedColumns
+      : undefined;
+
+    return { queries, logics, derived_columns, operations, transformations };
+  }, [store.datasets, store.joinSteps, store.postJoinFilters, store.postJoinFilterLogic, store.postJoinSorts, store.postJoinTransforms, store.postJoinGroupBy, store.postJoinDistinct, store.postJoinDerivedColumns, paramCandidates]);
 
   const handleSubmit = async () => {
     if (!name.trim()) {
@@ -349,6 +387,16 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
                       onCheckedChange={() => toggleCandidate(idx)}
                     />
                     <span className="text-muted-foreground">
+                      {c.source === 'postjoin' && (
+                        <span className="mr-1 rounded bg-blue-100 px-1 py-0.5 text-[10px] font-medium text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                          Post-Join
+                        </span>
+                      )}
+                      {c.source === 'dataset' && (
+                        <span className="mr-1 rounded bg-gray-100 px-1 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                          DS {c.datasetIndex + 1}
+                        </span>
+                      )}
                       {c.column} {c.operator} {String(c.value)}
                     </span>
                     {c.enabled && (

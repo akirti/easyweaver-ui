@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Play, Loader2, Upload } from 'lucide-react';
+import { ArrowLeft, Play, Loader2, Upload, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -12,6 +12,7 @@ import {
   useProcessRun,
   useProcessRunResults,
   useSaveResultsToGcp,
+  useRefreshCredentials,
 } from '@/queries/use-processes';
 import { ParamForm } from './ParamForm';
 import { RunHistory } from './RunHistory';
@@ -33,6 +34,7 @@ export function ProcessRunner() {
   const { data: config, isLoading } = useProcessConfiguration(configId!);
   const runMutation = useRunProcess(configId!);
   const saveToGcpMutation = useSaveResultsToGcp();
+  const refreshCredentialsMutation = useRefreshCredentials();
 
   const [paramValues, setParamValues] = useState<Record<string, unknown>>({});
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
@@ -58,6 +60,30 @@ export function ProcessRunner() {
   }, [config?.params]);
 
   const { data: activeRun } = useProcessRun(activeRunId);
+
+  const sourceSummary = useMemo(() => {
+    if (!config?.config?.queries) return [];
+    const sources: { name: string; type: string }[] = [];
+    const seen = new Set<string>();
+    for (const group of Object.values(config.config.queries)) {
+      for (const q of Object.values(group)) {
+        if (q.source_name && !seen.has(q.source_id)) {
+          seen.add(q.source_id);
+          sources.push({ name: q.source_name, type: q.source_type || 'unknown' });
+        }
+      }
+    }
+    return sources;
+  }, [config]);
+
+  const handleRefreshCredentials = async () => {
+    try {
+      await refreshCredentialsMutation.mutateAsync(configId!);
+      toast.success('Credentials refreshed successfully');
+    } catch (err) {
+      toast.error(getErrorMessage(err));
+    }
+  };
 
   const handleExecute = async () => {
     try {
@@ -108,10 +134,35 @@ export function ProcessRunner() {
           {config.description && (
             <p className="text-sm text-muted-foreground">{config.description}</p>
           )}
+          {sourceSummary.length > 0 && (
+            <div className="mt-1 flex items-center gap-1.5">
+              {sourceSummary.map((s) => (
+                <Badge key={s.name} variant="outline" className="text-xs">
+                  {s.name} ({s.type})
+                </Badge>
+              ))}
+            </div>
+          )}
         </div>
-        <Badge variant="secondary" className="ml-auto">
-          v{config.version}
-        </Badge>
+        <div className="ml-auto flex items-center gap-2">
+          <Badge variant="secondary">v{config.version}</Badge>
+          {config.config.config_version === 2 ? (
+            <Badge className="bg-green-100 text-green-800">Self-sufficient</Badge>
+          ) : (
+            <Badge className="bg-yellow-100 text-yellow-800">Legacy</Badge>
+          )}
+          {config.config.config_version === 2 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleRefreshCredentials}
+              disabled={refreshCredentialsMutation.isPending}
+            >
+              <RefreshCw className={`mr-1 h-3 w-3 ${refreshCredentialsMutation.isPending ? 'animate-spin' : ''}`} />
+              Refresh Credentials
+            </Button>
+          )}
+        </div>
       </div>
 
       <Tabs defaultValue="run">

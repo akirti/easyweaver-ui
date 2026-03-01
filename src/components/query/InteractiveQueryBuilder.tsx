@@ -8,6 +8,9 @@ import { JoinStepCard } from './JoinStepCard';
 import { FilterBuilder } from './FilterBuilder';
 import { SortConfigurator } from './SortConfigurator';
 import { TransformBuilder } from './TransformBuilder';
+import { GroupByBuilder } from './GroupByBuilder';
+import { DistinctBuilder } from './DistinctBuilder';
+import { DerivedColumnBuilder } from './DerivedColumnBuilder';
 import { DataTable } from '@/components/results/DataTable';
 import { SaveProcessDialog } from '@/components/processes/SaveProcessDialog';
 import { useQueryStore } from '@/stores/query-store';
@@ -50,21 +53,33 @@ export function InteractiveQueryBuilder() {
     return `Join ${stepIndex} Result`;
   };
 
-  // Apply post-join filters on the final result
+  // Apply post-join operations on the final result
   const handleApplyPostJoin = async () => {
-    // Re-execute the last join with filters applied
     const leftRunId = getLeftRunId(lastJoinIndex);
     const rightRunId = store.datasets[lastJoinIndex + 1]?.runId;
     const config = lastJoinStep?.config;
 
     if (!leftRunId || !rightRunId || !config) return;
 
+    const selectCols = lastJoinStep.selectColumns;
+    const allCols = finalColumns.map((c) => c.name);
+
     const request: JoinResultsRequest = {
       left_run_id: leftRunId,
       right_run_id: rightRunId,
       join: config,
+      select_columns:
+        selectCols.length > 0 && selectCols.length < allCols.length
+          ? selectCols
+          : undefined,
+      derived_columns:
+        store.postJoinDerivedColumns.length > 0
+          ? store.postJoinDerivedColumns
+          : undefined,
       filters: store.postJoinFilters,
       filter_logic: store.postJoinFilterLogic,
+      group_by: store.postJoinGroupBy || undefined,
+      distinct: store.postJoinDistinct || undefined,
       sort: store.postJoinSorts,
       transforms: store.postJoinTransforms,
     };
@@ -73,7 +88,7 @@ export function InteractiveQueryBuilder() {
       const run = await joinMutation.mutateAsync(request);
       store.setJoinResult(lastJoinIndex, run.id, 'pending', null, null, true);
     } catch {
-      toast.error('Failed to apply filters');
+      toast.error('Failed to apply operations');
     }
   };
 
@@ -82,12 +97,10 @@ export function InteractiveQueryBuilder() {
       {/* Dynamic dataset panels with join steps between them */}
       {store.datasets.map((ds, idx) => {
         const datasetLabel = `Dataset ${String.fromCharCode(65 + idx)}`;
-        // Join step index: joinSteps[idx-1] connects previous result with this dataset
         const joinStepIndex = idx - 1;
 
         return (
           <div key={idx} className="space-y-4">
-            {/* Join step card before this dataset (except the first) */}
             {idx > 0 && (
               <JoinStepCard
                 stepIndex={joinStepIndex}
@@ -99,7 +112,6 @@ export function InteractiveQueryBuilder() {
               />
             )}
 
-            {/* Dataset panel */}
             <DatasetPanel
               label={datasetLabel}
               dataset={ds}
@@ -137,13 +149,21 @@ export function InteractiveQueryBuilder() {
       </div>
       <SaveProcessDialog open={saveDialogOpen} onOpenChange={setSaveDialogOpen} />
 
-      {/* Post-join filters — visible when the last join is completed */}
+      {/* Post-join operations -- visible when the last join is completed */}
       {finalRunId && finalColumns.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle className="text-base">Post-Join Filters, Sorting & Transforms</CardTitle>
+            <CardTitle className="text-base">Post-Join Operations</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div>
+              <Label className="text-xs text-muted-foreground">Derived Columns</Label>
+              <DerivedColumnBuilder
+                columns={finalColumns}
+                derivedColumns={store.postJoinDerivedColumns}
+                onChange={store.setPostJoinDerivedColumns}
+              />
+            </div>
             <div>
               <Label className="text-xs text-muted-foreground">Filters</Label>
               <FilterBuilder
@@ -152,6 +172,22 @@ export function InteractiveQueryBuilder() {
                 onChange={store.setPostJoinFilters}
                 filterLogic={store.postJoinFilterLogic}
                 onLogicChange={store.setPostJoinFilterLogic}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Group By</Label>
+              <GroupByBuilder
+                columns={finalColumns}
+                groupBy={store.postJoinGroupBy}
+                onChange={store.setPostJoinGroupBy}
+              />
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">Distinct</Label>
+              <DistinctBuilder
+                columns={finalColumns}
+                distinct={store.postJoinDistinct}
+                onChange={store.setPostJoinDistinct}
               />
             </div>
             <div>
@@ -171,7 +207,7 @@ export function InteractiveQueryBuilder() {
               />
             </div>
             <Button onClick={handleApplyPostJoin} size="sm" className="w-full">
-              Apply Filters, Sort & Transforms
+              Apply Operations
             </Button>
           </CardContent>
         </Card>

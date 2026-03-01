@@ -2,6 +2,7 @@ import { useLocation } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth-store';
 
 const titles: Record<string, string> = {
+  '/dashboard': 'Dashboard',
   '/queries': 'Query Explorer',
   '/sources': 'Connections',
   '/processes': 'Saved Processes',

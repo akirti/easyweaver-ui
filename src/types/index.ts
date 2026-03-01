@@ -171,12 +171,57 @@ export interface QueryRequest {
   page_size: number;
 }
 
+// Derived column types
+export type DerivedExpressionType = 'concat' | 'math' | 'date_part' | 'conditional' | 'literal';
+export type DatePartType = 'year' | 'month' | 'day' | 'hour' | 'minute' | 'second' | 'day_of_week' | 'quarter';
+
+export interface DerivedColumnSpec {
+  name: string;
+  expression_type: DerivedExpressionType;
+  columns?: string[];
+  separator?: string;
+  expression?: string;
+  source_column?: string;
+  part?: DatePartType;
+  condition_column?: string;
+  condition_operator?: string;
+  condition_value?: unknown;
+  then_value?: unknown;
+  else_value?: unknown;
+  value?: unknown;
+}
+
+// Group by types
+export type AggFunction = 'count' | 'sum' | 'avg' | 'min' | 'max' | 'count_distinct';
+
+export interface AggregationSpec {
+  column: string;
+  function: AggFunction;
+  alias?: string;
+}
+
+export interface GroupBySpec {
+  group_columns: string[];
+  aggregations: AggregationSpec[];
+}
+
+// Distinct types
+export interface DistinctSpec {
+  enabled: boolean;
+  columns?: string[];
+  keep: 'first' | 'last' | 'any' | 'none';
+}
+
 export interface JoinResultsRequest {
   left_run_id: string;
   right_run_id: string;
   join: JoinConfig;
+  select_columns?: string[];
+  derived_columns?: DerivedColumnSpec[];
   filters: FilterCondition[];
   filter_logic?: 'and' | 'or';
+  group_by?: GroupBySpec;
+  distinct?: DistinctSpec;
   sort: SortSpec[];
   transforms: TransformSpec[];
 }
@@ -238,6 +283,8 @@ export interface ProcessFilterConfig {
 
 export interface ProcessQueryConfig {
   source_id: string;
+  source_name?: string;
+  source_type?: string;
   table: string;
   columns?: string[];
   filters: ProcessFilterConfig[];
@@ -252,11 +299,14 @@ export interface ProcessLogicStep {
   join_type: 'inner' | 'left' | 'right' | 'outer';
   left_on: string[];
   right_on: string[];
+  select_columns?: string[];
 }
 
 export interface ProcessOperations {
   filters: ProcessFilterConfig[];
   filter_logic: 'and' | 'or';
+  group_by?: GroupBySpec;
+  distinct?: DistinctSpec;
   sorts: SortSpec[];
 }
 
@@ -272,8 +322,10 @@ export interface ProcessTransformation {
 export interface ProcessConfig {
   queries: Record<string, Record<string, ProcessQueryConfig>>;
   logics: ProcessLogicStep[];
+  derived_columns?: DerivedColumnSpec[];
   operations?: ProcessOperations;
   transformations: ProcessTransformation[];
+  config_version?: number;
 }
 
 export interface ProcessConfiguration {
@@ -304,6 +356,7 @@ export interface ProcessConfigurationCreate {
 export interface ProcessRunRequest {
   param_values?: Record<string, unknown>;
   save_results_to_gcp?: boolean;
+  config_source?: 'auto' | 'mongodb' | 'gcp';
 }
 
 export interface ProcessRun {
@@ -322,4 +375,59 @@ export interface ProcessRun {
 export interface ProcessRunHistory {
   runs: ProcessRun[];
   total: number;
+}
+
+// Dashboard types
+export interface TableMonitorConfig {
+  table_name: string;
+  timestamp_column?: string;
+  modified_by_column?: string;
+}
+
+export interface DashboardConfig {
+  id: string;
+  user_id: string;
+  name: string;
+  source_id: string;
+  tables: TableMonitorConfig[];
+  refresh_interval_minutes: number;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DashboardConfigCreate {
+  name: string;
+  source_id: string;
+  tables: TableMonitorConfig[];
+  refresh_interval_minutes?: number;
+}
+
+export interface TableStats {
+  table_name: string;
+  current_row_count: number;
+  changes_1h: number | null;
+  changes_3h: number | null;
+  changes_24h: number | null;
+  last_modified_at: string | null;
+  last_modified_by: string | null;
+  column_count: number;
+  size_bytes: number | null;
+}
+
+export interface DashboardStats {
+  config_id: string;
+  source_name: string;
+  source_type: string;
+  tables: TableStats[];
+  captured_at: string;
+  connection_healthy: boolean;
+}
+
+export interface DataSnapshot {
+  id: string;
+  config_id: string;
+  table_name: string;
+  row_count: number;
+  captured_at: string;
 }
