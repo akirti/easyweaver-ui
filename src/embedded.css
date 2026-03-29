@@ -1,0 +1,199 @@
+/*
+ * Theme CSS variables for embedded mode.
+ * This file contains ONLY CSS custom property definitions — no Tailwind directives.
+ * Imported by EasyWeaverApp.tsx so that shadcn components have the right colors
+ * when rendered inside the admin-panel.
+ */
+
+:root,
+[data-theme="original"] {
+    --radius: 0.625rem;
+    --background: #ffffff;
+    --foreground: #171717;
+    --card: #ffffff;
+    --card-foreground: #171717;
+    --popover: #ffffff;
+    --popover-foreground: #171717;
+    --primary: #dc2626;
+    --primary-foreground: #ffffff;
+    --secondary: #f9fafb;
+    --secondary-foreground: #525252;
+    --muted: #f9fafb;
+    --muted-foreground: #737373;
+    --accent: #f5f5f5;
+    --accent-foreground: #171717;
+    --destructive: #dc2626;
+    --border: #e5e5e5;
+    --input: #e5e5e5;
+    --ring: #ef4444;
+    --chart-1: #dc2626;
+    --chart-2: #f97316;
+    --chart-3: #eab308;
+    --chart-4: #22c55e;
+    --chart-5: #3b82f6;
+    --sidebar: #ffffff;
+    --sidebar-foreground: #171717;
+    --sidebar-primary: #dc2626;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f5f5f5;
+    --sidebar-accent-foreground: #171717;
+    --sidebar-border: #e5e5e5;
+    --sidebar-ring: #ef4444;
+}
+
+[data-theme="dark"] {
+    --background: #0f0f1a;
+    --foreground: #e2e8f0;
+    --card: #1e1e2e;
+    --card-foreground: #e2e8f0;
+    --popover: #1e1e2e;
+    --popover-foreground: #e2e8f0;
+    --primary: #818cf8;
+    --primary-foreground: #0f0f1a;
+    --secondary: #16162a;
+    --secondary-foreground: #94a3b8;
+    --muted: #16162a;
+    --muted-foreground: #64748b;
+    --accent: #2a2a3e;
+    --accent-foreground: #e2e8f0;
+    --destructive: #ef4444;
+    --border: #2a2a3e;
+    --input: #2a2a3e;
+    --ring: #6366f1;
+    --chart-1: #818cf8;
+    --chart-2: #a78bfa;
+    --chart-3: #c084fc;
+    --chart-4: #34d399;
+    --chart-5: #38bdf8;
+    --sidebar: #16162a;
+    --sidebar-foreground: #e2e8f0;
+    --sidebar-primary: #818cf8;
+    --sidebar-primary-foreground: #0f0f1a;
+    --sidebar-accent: #2a2a3e;
+    --sidebar-accent-foreground: #e2e8f0;
+    --sidebar-border: #2a2a3e;
+    --sidebar-ring: #6366f1;
+}
+
+[data-theme="ocean"] {
+    --background: #ffffff;
+    --foreground: #0c4a6e;
+    --card: #ffffff;
+    --card-foreground: #0c4a6e;
+    --popover: #ffffff;
+    --popover-foreground: #0c4a6e;
+    --primary: #0891b2;
+    --primary-foreground: #ffffff;
+    --secondary: #f0f9ff;
+    --secondary-foreground: #0369a1;
+    --muted: #f0f9ff;
+    --muted-foreground: #0284c7;
+    --accent: #e0f2fe;
+    --accent-foreground: #0c4a6e;
+    --destructive: #dc2626;
+    --border: #bae6fd;
+    --input: #bae6fd;
+    --ring: #06b6d4;
+    --sidebar: #f0f9ff;
+    --sidebar-foreground: #0c4a6e;
+    --sidebar-primary: #0891b2;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #e0f2fe;
+    --sidebar-accent-foreground: #0c4a6e;
+    --sidebar-border: #bae6fd;
+    --sidebar-ring: #06b6d4;
+}
+
+[data-theme="forest"] {
+    --background: #ffffff;
+    --foreground: #1a2e1a;
+    --card: #ffffff;
+    --card-foreground: #1a2e1a;
+    --popover: #ffffff;
+    --popover-foreground: #1a2e1a;
+    --primary: #059669;
+    --primary-foreground: #ffffff;
+    --secondary: #faf5f0;
+    --secondary-foreground: #3d5c3d;
+    --muted: #faf5f0;
+    --muted-foreground: #6b8c6b;
+    --accent: #f5ede4;
+    --accent-foreground: #1a2e1a;
+    --destructive: #dc2626;
+    --border: #d4c4b0;
+    --input: #d4c4b0;
+    --ring: #10b981;
+    --sidebar: #faf5f0;
+    --sidebar-foreground: #1a2e1a;
+    --sidebar-primary: #059669;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f5ede4;
+    --sidebar-accent-foreground: #1a2e1a;
+    --sidebar-border: #d4c4b0;
+    --sidebar-ring: #10b981;
+}
+
+[data-theme="sunset"] {
+    --background: #fffbf5;
+    --foreground: #431407;
+    --card: #fffbf5;
+    --card-foreground: #431407;
+    --popover: #fffbf5;
+    --popover-foreground: #431407;
+    --primary: #ea580c;
+    --primary-foreground: #ffffff;
+    --secondary: #fef3e2;
+    --secondary-foreground: #7c2d12;
+    --muted: #fef3e2;
+    --muted-foreground: #9a3412;
+    --accent: #fde9cc;
+    --accent-foreground: #431407;
+    --destructive: #dc2626;
+    --border: #fed7aa;
+    --input: #fed7aa;
+    --ring: #f97316;
+    --sidebar: #fef3e2;
+    --sidebar-foreground: #431407;
+    --sidebar-primary: #ea580c;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #fde9cc;
+    --sidebar-accent-foreground: #431407;
+    --sidebar-border: #fed7aa;
+    --sidebar-ring: #f97316;
+}
+
+[data-theme="lavender"] {
+    --background: #ffffff;
+    --foreground: #2e1065;
+    --card: #ffffff;
+    --card-foreground: #2e1065;
+    --popover: #ffffff;
+    --popover-foreground: #2e1065;
+    --primary: #7c3aed;
+    --primary-foreground: #ffffff;
+    --secondary: #faf5ff;
+    --secondary-foreground: #581c87;
+    --muted: #faf5ff;
+    --muted-foreground: #7e22ce;
+    --accent: #f3e8ff;
+    --accent-foreground: #2e1065;
+    --destructive: #dc2626;
+    --border: #ddd6fe;
+    --input: #ddd6fe;
+    --ring: #8b5cf6;
+    --sidebar: #faf5ff;
+    --sidebar-foreground: #2e1065;
+    --sidebar-primary: #7c3aed;
+    --sidebar-primary-foreground: #ffffff;
+    --sidebar-accent: #f3e8ff;
+    --sidebar-accent-foreground: #2e1065;
+    --sidebar-border: #ddd6fe;
+    --sidebar-ring: #8b5cf6;
+}
+
+/* Base reset for easyweaver components */
+.easyweaver-scope *,
+.easyweaver-scope *::before,
+.easyweaver-scope *::after {
+    border-color: var(--border);
+}

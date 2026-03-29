@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -150,6 +151,7 @@ export function CreateConfigDialog({ open, onOpenChange }: CreateConfigDialogPro
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>New Dashboard Config</DialogTitle>
+          <DialogDescription>Select a data source and tables to monitor.</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">

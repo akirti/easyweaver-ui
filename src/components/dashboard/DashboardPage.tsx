@@ -125,10 +125,10 @@ function ConfigCard({
       }`}
       onClick={onSelect}
     >
-      <CardHeader className="pb-2">
+      <CardHeader className="pb-2 bg-muted/50 rounded-t-xl">
         <div className="flex items-start justify-between">
           <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            <BarChart3 className="h-4 w-4 text-primary" />
             <CardTitle className="text-base">{config.name}</CardTitle>
           </div>
           <Badge variant={config.is_active ? 'default' : 'secondary'}>

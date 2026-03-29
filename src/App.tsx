@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from '@/components/ui/sonner';
 import { ThemeProvider } from '@/themes';
+import { BasePathProvider } from '@/contexts/base-path';
 import { AppShell } from '@/components/layout/AppShell';
 import { AuthGuard } from '@/components/auth/AuthGuard';
 import { LoginPage } from '@/components/auth/LoginPage';
@@ -39,8 +40,9 @@ function AuthBootstrap({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
+      <BasePathProvider basePath="">
+        <QueryClientProvider client={queryClient}>
+          <BrowserRouter>
         <AuthBootstrap>
           <Routes>
             <Route path="/login" element={<LoginPage />} />
@@ -57,9 +59,10 @@ export default function App() {
             </Route>
           </Routes>
         </AuthBootstrap>
-        </BrowserRouter>
-        <Toaster />
-      </QueryClientProvider>
+          </BrowserRouter>
+          <Toaster />
+        </QueryClientProvider>
+      </BasePathProvider>
     </ThemeProvider>
   );
 }
