@@ -64,6 +64,7 @@ export function EasyWeaverApp({ apiBaseUrl, getToken, basePath = '' }: EasyWeave
     <ThemeProvider embedded>
       <BasePathProvider basePath={absBase}>
         <QueryClientProvider client={queryClient}>
+          <div className="easyweaver-scope">
           <Routes>
           <Route element={<AppShell />}>
             <Route path="dashboard" element={<DashboardPage />} />
@@ -77,6 +78,7 @@ export function EasyWeaverApp({ apiBaseUrl, getToken, basePath = '' }: EasyWeave
             <Route path="*" element={<Navigate to={`${absBase}/queries`} replace />} />
           </Route>
         </Routes>
+          </div>
           <Toaster />
         </QueryClientProvider>
       </BasePathProvider>

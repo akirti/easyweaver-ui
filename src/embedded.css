@@ -191,9 +191,26 @@
     --sidebar-ring: #8b5cf6;
 }
 
-/* Base reset for easyweaver components */
+/* Base styles for easyweaver embedded components */
+.easyweaver-scope {
+    color: var(--foreground);
+    background-color: var(--background);
+}
+
 .easyweaver-scope *,
 .easyweaver-scope *::before,
 .easyweaver-scope *::after {
     border-color: var(--border);
+}
+
+/* Ensure form inputs have visible text */
+.easyweaver-scope input,
+.easyweaver-scope textarea,
+.easyweaver-scope select {
+    color: var(--foreground);
+}
+
+.easyweaver-scope input::placeholder,
+.easyweaver-scope textarea::placeholder {
+    color: var(--muted-foreground);
 }
