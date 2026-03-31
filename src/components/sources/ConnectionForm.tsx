@@ -125,6 +125,7 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
   const [sslClientKey, setSslClientKey] = useState('');
   const [sslCaCert, setSslCaCert] = useState('');
   const [useConnectionString, setUseConnectionString] = useState(false);
+  const [mongoScheme, setMongoScheme] = useState<'mongodb' | 'mongodb+srv'>('mongodb');
 
   const {
     register,
@@ -174,6 +175,7 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
     setSslClientKey('');
     setSslCaCert('');
     setUseConnectionString(false);
+    setMongoScheme('mongodb');
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -351,14 +353,15 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
       if (st === 'mongodb') {
         const mongoCreds: Record<string, unknown> = {
           type: 'mongodb' as const,
+          scheme: mongoScheme,
           host: data.host,
           database: data.database,
           user: data.user || '',
           password: data.password || '',
           auth_database: data.auth_database || 'admin',
         };
-        // Only include port if provided (SRV/Atlas connections don't use port)
-        if (data.port && port > 0) {
+        // Only include port for standard mongodb:// scheme
+        if (mongoScheme === 'mongodb' && data.port && port > 0) {
           mongoCreds.port = port;
         }
         credentials = mongoCreds as SourceCredentials;
@@ -445,7 +448,7 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
             </Select>
           </div>
 
-          {/* MongoDB: connection string toggle */}
+          {/* MongoDB: input mode toggle */}
           {sourceType === 'mongodb' && (
             <div className="flex items-center gap-2">
               <button
@@ -489,19 +492,83 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
             </>
           )}
 
-          {/* Database fields (postgres, mongodb, mysql, db2) — skip for mongo connection string mode */}
-          {isDbType && !(sourceType === 'mongodb' && useConnectionString) && (
+          {/* MongoDB individual fields mode — show scheme selector */}
+          {sourceType === 'mongodb' && !useConnectionString && (
             <>
-              <div className="grid grid-cols-3 gap-3">
-                <div className={sourceType === 'mongodb' ? 'col-span-2' : 'col-span-2'}>
+              <div>
+                <Label>Connection Scheme</Label>
+                <Select value={mongoScheme} onValueChange={(v) => {
+                  setMongoScheme(v as 'mongodb' | 'mongodb+srv');
+                  if (v === 'mongodb+srv') {
+                    setValue('port', '');
+                  } else {
+                    setValue('port', DEFAULT_PORTS['mongodb']);
+                  }
+                }}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="mongodb">mongodb://</SelectItem>
+                    <SelectItem value="mongodb+srv">mongodb+srv://</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {mongoScheme === 'mongodb+srv'
+                    ? 'SRV — for cloud/Atlas deployments (no port needed)'
+                    : 'Standard — for self-hosted with host:port'}
+                </p>
+              </div>
+
+              <div className={mongoScheme === 'mongodb+srv' ? '' : 'grid grid-cols-3 gap-3'}>
+                <div className={mongoScheme === 'mongodb+srv' ? '' : 'col-span-2'}>
                   <Label>Host</Label>
                   <Input
                     {...register('host')}
-                    placeholder={sourceType === 'mongodb' ? 'cluster0.abc123.mongodb.net' : 'localhost'}
+                    placeholder={mongoScheme === 'mongodb+srv' ? 'cluster0.abc123.mongodb.net' : 'mongo.example.com'}
                   />
                 </div>
+                {mongoScheme === 'mongodb' && (
+                  <div>
+                    <Label>Port</Label>
+                    <Input {...register('port')} type="number" placeholder="27017" />
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <Label>Database</Label>
+                <Input {...register('database')} placeholder="mydb" />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <Label>Port {sourceType === 'mongodb' && <span className="text-xs text-muted-foreground">(optional)</span>}</Label>
+                  <Label>User <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                  <Input {...register('user')} />
+                </div>
+                <div>
+                  <Label>Password <span className="text-xs text-muted-foreground">(optional)</span></Label>
+                  <Input {...register('password')} type="password" />
+                </div>
+              </div>
+
+              <div>
+                <Label>Auth Database</Label>
+                <Input {...register('auth_database')} placeholder="admin" />
+              </div>
+            </>
+          )}
+
+          {/* Database fields (postgres, mysql, db2) — non-mongo DB types */}
+          {isDbType && sourceType !== 'mongodb' && (
+            <>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="col-span-2">
+                  <Label>Host</Label>
+                  <Input {...register('host')} placeholder="localhost" />
+                </div>
+                <div>
+                  <Label>Port</Label>
                   <Input
                     {...register('port')}
                     type="number"
@@ -525,13 +592,6 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
                   <Input {...register('password')} type="password" />
                 </div>
               </div>
-
-              {sourceType === 'mongodb' && (
-                <div>
-                  <Label>Auth Database</Label>
-                  <Input {...register('auth_database')} placeholder="admin" />
-                </div>
-              )}
 
               {/* SSL Configuration (PostgreSQL) */}
               {sourceType === 'postgres' && (
