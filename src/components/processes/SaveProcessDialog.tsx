@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useBasePath } from '@/contexts/base-path';
 import {
   Dialog,
   DialogContent,
@@ -58,6 +59,8 @@ function categoryToParamType(category: string): ParamDefinition['type'] {
 
 export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps) {
   const navigate = useNavigate();
+  const basePath = useBasePath();
+  const abs = (rel: string) => basePath ? `${basePath}/${rel}` : `/${rel}`;
   const store = useQueryStore();
   const createMutation = useCreateProcess();
 
@@ -301,7 +304,7 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
       await createMutation.mutateAsync(data);
       toast.success('Process saved');
       handleOpenChange(false);
-      navigate('/processes');
+      navigate(abs('processes'));
     } catch (err) {
       toast.error(getErrorMessage(err));
     }

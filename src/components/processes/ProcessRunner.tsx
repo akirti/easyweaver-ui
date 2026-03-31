@@ -19,6 +19,7 @@ import { RunHistory } from './RunHistory';
 import { DataTable } from '@/components/results/DataTable';
 import { toast } from 'sonner';
 import { getErrorMessage } from '@/api/client';
+import { useBasePath } from '@/contexts/base-path';
 
 const statusColors: Record<string, string> = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -31,6 +32,8 @@ const statusColors: Record<string, string> = {
 export function ProcessRunner() {
   const { configId } = useParams<{ configId: string }>();
   const navigate = useNavigate();
+  const basePath = useBasePath();
+  const abs = (rel: string) => basePath ? `${basePath}/${rel}` : `/${rel}`;
   const { data: config, isLoading } = useProcessConfiguration(configId!);
   const runMutation = useRunProcess(configId!);
   const saveToGcpMutation = useSaveResultsToGcp();
@@ -126,7 +129,7 @@ export function ProcessRunner() {
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/processes')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(abs('processes'))}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>

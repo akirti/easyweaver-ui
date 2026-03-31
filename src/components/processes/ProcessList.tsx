@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { PlayCircle, Trash2, Plus, Clock } from 'lucide-react';
+import { useBasePath } from '@/contexts/base-path';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -16,6 +17,8 @@ import { getErrorMessage } from '@/api/client';
 
 export function ProcessList() {
   const navigate = useNavigate();
+  const basePath = useBasePath();
+  const abs = (rel: string) => basePath ? `${basePath}/${rel}` : `/${rel}`;
   const { data: processes, isLoading } = useProcessConfigurations();
   const deleteMutation = useDeleteProcess();
 
@@ -54,7 +57,7 @@ export function ProcessList() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-semibold">Saved Processes</h2>
-        <Button onClick={() => navigate('/queries')}>
+        <Button onClick={() => navigate(abs('queries'))}>
           <Plus className="mr-1 h-4 w-4" />
           New Process
         </Button>
@@ -71,7 +74,7 @@ export function ProcessList() {
           <Card
             key={process.id}
             className="cursor-pointer transition-colors hover:bg-accent/50"
-            onClick={() => navigate(`/processes/${process.id}`)}
+            onClick={() => navigate(abs(`processes/${process.id}`))}
           >
             <CardHeader className="pb-2">
               <div className="flex items-start justify-between">
