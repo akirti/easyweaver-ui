@@ -75,6 +75,7 @@ const schema = z.object({
   user: z.string().optional(),
   password: z.string().optional(),
   auth_database: z.string().optional(),
+  connection_string: z.string().optional(),
   ssl_mode: z.string().optional(),
   // REST API fields
   base_url: z.string().optional(),
@@ -123,6 +124,7 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
   const [sslClientCert, setSslClientCert] = useState('');
   const [sslClientKey, setSslClientKey] = useState('');
   const [sslCaCert, setSslCaCert] = useState('');
+  const [useConnectionString, setUseConnectionString] = useState(false);
 
   const {
     register,
@@ -142,6 +144,7 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
       user: '',
       password: '',
       auth_database: 'admin',
+      connection_string: '',
       ssl_mode: 'disable',
       base_url: '',
       bearer_token: '',
@@ -170,6 +173,7 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
     setSslClientCert('');
     setSslClientKey('');
     setSslCaCert('');
+    setUseConnectionString(false);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -305,6 +309,33 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
       }
 
       // Database types (postgres, mongodb, mysql, db2)
+
+      // MongoDB connection string mode
+      if (st === 'mongodb' && useConnectionString) {
+        if (!data.connection_string) {
+          toast.error('Connection string is required');
+          return;
+        }
+        if (!data.database) {
+          toast.error('Database name is required');
+          return;
+        }
+        const credentials: SourceCredentials = {
+          type: 'mongodb',
+          connection_string: data.connection_string,
+          database: data.database,
+        } as SourceCredentials;
+        await createMutation.mutateAsync({
+          name: data.name,
+          source_type: 'mongodb',
+          credentials,
+        });
+        toast.success('Connection created');
+        resetForm();
+        onOpenChange(false);
+        return;
+      }
+
       if (!data.host) {
         toast.error('Host is required');
         return;
@@ -414,8 +445,52 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
             </Select>
           </div>
 
-          {/* Database fields (postgres, mongodb, mysql, db2) */}
-          {isDbType && (
+          {/* MongoDB: connection string toggle */}
+          {sourceType === 'mongodb' && (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setUseConnectionString(false)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  !useConnectionString ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent'
+                }`}
+              >
+                Individual Fields
+              </button>
+              <button
+                type="button"
+                onClick={() => setUseConnectionString(true)}
+                className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  useConnectionString ? 'bg-primary text-primary-foreground' : 'bg-secondary text-secondary-foreground hover:bg-accent'
+                }`}
+              >
+                Connection String
+              </button>
+            </div>
+          )}
+
+          {/* MongoDB connection string mode */}
+          {sourceType === 'mongodb' && useConnectionString && (
+            <>
+              <div>
+                <Label>Connection String</Label>
+                <Input
+                  {...register('connection_string')}
+                  placeholder="mongodb+srv://user:password@cluster0.abc123.mongodb.net/mydb"
+                />
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Supports mongodb:// and mongodb+srv:// formats
+                </p>
+              </div>
+              <div>
+                <Label>Database</Label>
+                <Input {...register('database')} placeholder="mydb" />
+              </div>
+            </>
+          )}
+
+          {/* Database fields (postgres, mongodb, mysql, db2) — skip for mongo connection string mode */}
+          {isDbType && !(sourceType === 'mongodb' && useConnectionString) && (
             <>
               <div className="grid grid-cols-3 gap-3">
                 <div className={sourceType === 'mongodb' ? 'col-span-2' : 'col-span-2'}>

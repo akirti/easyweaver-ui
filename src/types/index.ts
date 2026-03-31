@@ -28,12 +28,14 @@ export interface PostgresCredentials {
 
 export interface MongoCredentials {
   type: 'mongodb';
-  host: string;
+  /** Direct connection string (mongodb:// or mongodb+srv://). When set, host/port/user/password are ignored. */
+  connection_string?: string;
+  host?: string;
   port?: number;
   database: string;
-  user: string;
-  password: string;
-  auth_database: string;
+  user?: string;
+  password?: string;
+  auth_database?: string;
 }
 
 export interface MySQLCredentials {
