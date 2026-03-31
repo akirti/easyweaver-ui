@@ -8,6 +8,8 @@ export interface Source {
   updated_at: string;
 }
 
+export type SslMode = 'disable' | 'allow' | 'prefer' | 'require' | 'verify-ca' | 'verify-full';
+
 export interface PostgresCredentials {
   type: 'postgres';
   host: string;
@@ -15,12 +17,19 @@ export interface PostgresCredentials {
   database: string;
   user: string;
   password: string;
+  ssl_mode?: SslMode;
+  /** Base64-encoded client certificate (PEM) */
+  ssl_client_cert?: string;
+  /** Base64-encoded client private key (PEM) */
+  ssl_client_key?: string;
+  /** Base64-encoded CA certificate (PEM) */
+  ssl_ca_cert?: string;
 }
 
 export interface MongoCredentials {
   type: 'mongodb';
   host: string;
-  port: number;
+  port?: number;
   database: string;
   user: string;
   password: string;
