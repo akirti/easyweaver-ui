@@ -289,19 +289,19 @@ export function ColumnPicker({
         </Button>
       </div>
 
-      {/* Selected columns */}
+      {/* Selected columns — 3-column grid layout */}
       <div>
         <div className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Selected
+          Selected ({selectedColumns.length})
         </div>
-        <ScrollArea className="max-h-[300px]">
+        <ScrollArea className="max-h-[240px] overflow-hidden">
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
             onDragEnd={handleDragEnd}
           >
             <SortableContext items={selected} strategy={verticalListSortingStrategy}>
-              <div className="space-y-1">
+              <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
                 {selectedColumns.map((col) => (
                   <SortableColumnItem
                     key={col.name}
@@ -322,13 +322,13 @@ export function ColumnPicker({
         </ScrollArea>
       </div>
 
-      {/* Available columns */}
+      {/* Available columns — 3-column grid layout */}
       <div>
         <div className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-          Available
+          Available ({availableColumns.length})
         </div>
-        <ScrollArea className="max-h-[300px]">
-          <div className="space-y-1">
+        <ScrollArea className="max-h-[200px] overflow-hidden">
+          <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-3">
             {availableColumns.map((col) => (
               <div
                 key={col.name}

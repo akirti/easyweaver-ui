@@ -43,7 +43,7 @@ export function SourceSelector({
     <div className="space-y-3 rounded-lg border p-4">
       <Label className="text-sm font-semibold">{label}</Label>
 
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
         <div>
           <Label className="text-xs text-muted-foreground">Connection</Label>
           <ConnectionCombobox

@@ -93,42 +93,78 @@ export function InteractiveQueryBuilder() {
   };
 
   return (
-    <div className="space-y-6 p-6">
-      {/* Dynamic dataset panels with join steps between them */}
-      {store.datasets.map((ds, idx) => {
-        const datasetLabel = `Dataset ${String.fromCharCode(65 + idx)}`;
-        const joinStepIndex = idx - 1;
-
-        return (
-          <div key={idx} className="space-y-4">
-            {idx > 0 && (
-              <JoinStepCard
-                stepIndex={joinStepIndex}
-                leftRunId={getLeftRunId(joinStepIndex)}
-                rightRunId={ds.status === 'completed' ? ds.runId : null}
-                leftLabel={getLeftLabel(joinStepIndex)}
-                rightLabel={datasetLabel}
-                joinStep={store.joinSteps[joinStepIndex]}
-              />
-            )}
-
-            <DatasetPanel
-              label={datasetLabel}
-              dataset={ds}
-              onSourceChange={(id) => store.setDatasetSource(idx, id)}
-              onTableChange={(t) => store.setDatasetTable(idx, t)}
-              onColumnsChange={(c) => store.setDatasetColumns(idx, c)}
-              onFiltersChange={(f) => store.setDatasetFilters(idx, f)}
-              onFilterLogicChange={(l) => store.setDatasetFilterLogic(idx, l)}
-              onRunUpdate={(runId, status, rowCount, error) =>
-                store.setDatasetRun(idx, runId, status, rowCount, error)
-              }
-              removable={idx >= 2}
-              onRemove={() => store.removeDataset(idx)}
-            />
+    <div className="space-y-6 p-4 sm:p-6">
+      {/* Dataset panels — side-by-side on large screens when exactly 2 datasets */}
+      {store.datasets.length === 2 ? (
+        <>
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+            {store.datasets.map((ds, idx) => {
+              const datasetLabel = `Dataset ${String.fromCharCode(65 + idx)}`;
+              return (
+                <DatasetPanel
+                  key={idx}
+                  label={datasetLabel}
+                  dataset={ds}
+                  onSourceChange={(id) => store.setDatasetSource(idx, id)}
+                  onTableChange={(t) => store.setDatasetTable(idx, t)}
+                  onColumnsChange={(c) => store.setDatasetColumns(idx, c)}
+                  onFiltersChange={(f) => store.setDatasetFilters(idx, f)}
+                  onFilterLogicChange={(l) => store.setDatasetFilterLogic(idx, l)}
+                  onRunUpdate={(runId, status, rowCount, error) =>
+                    store.setDatasetRun(idx, runId, status, rowCount, error)
+                  }
+                  removable={idx >= 2}
+                  onRemove={() => store.removeDataset(idx)}
+                />
+              );
+            })}
           </div>
-        );
-      })}
+          <JoinStepCard
+            stepIndex={0}
+            leftRunId={getLeftRunId(0)}
+            rightRunId={store.datasets[1]?.status === 'completed' ? store.datasets[1].runId : null}
+            leftLabel={getLeftLabel(0)}
+            rightLabel="Dataset B"
+            joinStep={store.joinSteps[0]}
+          />
+        </>
+      ) : (
+        /* 3+ datasets: stacked layout with join steps between */
+        store.datasets.map((ds, idx) => {
+          const datasetLabel = `Dataset ${String.fromCharCode(65 + idx)}`;
+          const joinStepIndex = idx - 1;
+
+          return (
+            <div key={idx} className="space-y-4">
+              {idx > 0 && (
+                <JoinStepCard
+                  stepIndex={joinStepIndex}
+                  leftRunId={getLeftRunId(joinStepIndex)}
+                  rightRunId={ds.status === 'completed' ? ds.runId : null}
+                  leftLabel={getLeftLabel(joinStepIndex)}
+                  rightLabel={datasetLabel}
+                  joinStep={store.joinSteps[joinStepIndex]}
+                />
+              )}
+
+              <DatasetPanel
+                label={datasetLabel}
+                dataset={ds}
+                onSourceChange={(id) => store.setDatasetSource(idx, id)}
+                onTableChange={(t) => store.setDatasetTable(idx, t)}
+                onColumnsChange={(c) => store.setDatasetColumns(idx, c)}
+                onFiltersChange={(f) => store.setDatasetFilters(idx, f)}
+                onFilterLogicChange={(l) => store.setDatasetFilterLogic(idx, l)}
+                onRunUpdate={(runId, status, rowCount, error) =>
+                  store.setDatasetRun(idx, runId, status, rowCount, error)
+                }
+                removable={idx >= 2}
+                onRemove={() => store.removeDataset(idx)}
+              />
+            </div>
+          );
+        })
+      )}
 
       {/* Add Dataset / Save buttons */}
       <div className="flex gap-3">
