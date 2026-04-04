@@ -1,9 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Loader2, CheckCircle2, XCircle, Combine, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Card, CardContent } from '@/components/ui/card';
+import { ColumnPicker } from '@/components/query/ColumnPicker';
 import {
   Select,
   SelectContent,
@@ -42,6 +42,7 @@ export function JoinStepCard({
 }: Props) {
   const store = useQueryStore();
   const joinMutation = useJoinResults();
+  const [pinnedJoinColumns, setPinnedJoinColumns] = useState<string[]>([]);
 
   // Fetch columns from left run result
   const { data: leftResults } = useQueryResults(leftRunId, { page: 1, page_size: 1 });
@@ -127,26 +128,6 @@ export function JoinStepCard({
 
   const selectColumns = joinStep.selectColumns;
   const allJoinCols = joinResultColumns.map((c) => c.name);
-
-  const toggleSelectColumn = (col: string) => {
-    if (selectColumns.includes(col)) {
-      // Don't allow deselecting all
-      if (selectColumns.length > 1) {
-        store.setJoinSelectColumns(stepIndex, selectColumns.filter((c) => c !== col));
-      }
-    } else {
-      store.setJoinSelectColumns(stepIndex, [...selectColumns, col]);
-    }
-  };
-
-  const toggleSelectAll = () => {
-    if (selectColumns.length === allJoinCols.length) {
-      // Keep just the first column
-      store.setJoinSelectColumns(stepIndex, [allJoinCols[0]]);
-    } else {
-      store.setJoinSelectColumns(stepIndex, allJoinCols);
-    }
-  };
 
   const handleJoin = async () => {
     if (!leftRunId || !rightRunId || !config) return;
@@ -306,38 +287,14 @@ export function JoinStepCard({
         {/* Column selection after successful join */}
         {joinStep.status === 'completed' && joinResultColumns.length > 0 && (
           <div className="space-y-1.5 rounded-md border p-3">
-            <div className="flex items-center gap-2">
-              <Label className="text-xs text-muted-foreground">Select Columns</Label>
-              <button
-                type="button"
-                onClick={toggleSelectAll}
-                className="text-xs text-primary underline"
-              >
-                {selectColumns.length === allJoinCols.length ? 'Deselect All' : 'Select All'}
-              </button>
-              {selectColumns.length > 0 && selectColumns.length < allJoinCols.length && (
-                <span className="text-xs text-muted-foreground">
-                  ({selectColumns.length}/{allJoinCols.length})
-                </span>
-              )}
-            </div>
-            <div className="grid grid-cols-3 gap-1">
-              {joinResultColumns.map((col) => (
-                <label
-                  key={col.name}
-                  className="flex items-center gap-1.5 text-xs cursor-pointer"
-                >
-                  <Checkbox
-                    checked={selectColumns.length === 0 || selectColumns.includes(col.name)}
-                    onCheckedChange={() => toggleSelectColumn(col.name)}
-                  />
-                  <span className={col.name.endsWith('_right') ? 'text-blue-600' : ''}>
-                    {col.name}
-                  </span>
-                  <span className="text-muted-foreground">({col.type})</span>
-                </label>
-              ))}
-            </div>
+            <Label className="text-xs text-muted-foreground">Select Columns</Label>
+            <ColumnPicker
+              columns={joinResultColumns}
+              selected={selectColumns.length > 0 ? selectColumns : allJoinCols}
+              pinned={pinnedJoinColumns}
+              onSelectedChange={(cols) => store.setJoinSelectColumns(stepIndex, cols)}
+              onPinnedChange={setPinnedJoinColumns}
+            />
           </div>
         )}
       </CardContent>

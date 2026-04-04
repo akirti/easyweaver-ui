@@ -42,6 +42,12 @@ export const THEMES: ThemeDefinition[] = [
     description: 'Soft purple elegance',
     colors: { primary: '#7c3aed', bg: '#faf5ff', accent: '#f5f3ff' },
   },
+  {
+    id: 'soft',
+    label: 'Soft',
+    description: 'Neumorphic depth',
+    colors: { primary: '#4F46E5', bg: '#E8EDF2', accent: '#F0F4F8' },
+  },
 ];
 
 export const DEFAULT_THEME = 'original';

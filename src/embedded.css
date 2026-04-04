@@ -191,6 +191,98 @@
     --sidebar-ring: #8b5cf6;
 }
 
+/* Soft / Neumorphic Theme */
+[data-theme="soft"] {
+    --radius: 0.75rem;
+    --background: #E8EDF2;
+    --foreground: #1E293B;
+    --card: #E8EDF2;
+    --card-foreground: #1E293B;
+    --popover: #F0F4F8;
+    --popover-foreground: #1E293B;
+    --primary: #4F46E5;
+    --primary-foreground: #FFFFFF;
+    --secondary: #F0F4F8;
+    --secondary-foreground: #475569;
+    --muted: #D1D9E6;
+    --muted-foreground: #64748B;
+    --accent: #F0F4F8;
+    --accent-foreground: #1E293B;
+    --destructive: #EF4444;
+    --border: transparent;
+    --input: #D1D9E6;
+    --ring: #4F46E5;
+    --chart-1: #4F46E5;
+    --chart-2: #7C3AED;
+    --chart-3: #F97316;
+    --chart-4: #10B981;
+    --chart-5: #3B82F6;
+    --sidebar: #E0E5EC;
+    --sidebar-foreground: #1E293B;
+    --sidebar-primary: #4F46E5;
+    --sidebar-primary-foreground: #FFFFFF;
+    --sidebar-accent: #F0F4F8;
+    --sidebar-accent-foreground: #1E293B;
+    --sidebar-border: transparent;
+    --sidebar-ring: #4F46E5;
+
+    --shadow-light: rgba(255, 255, 255, 0.7);
+    --shadow-dark: rgba(163, 177, 198, 0.6);
+    --shadow-neu-raised: 6px 6px 12px var(--shadow-dark), -6px -6px 12px var(--shadow-light);
+    --shadow-neu-inset: inset 4px 4px 8px var(--shadow-dark), inset -4px -4px 8px var(--shadow-light);
+    --shadow-neu-hover: 8px 8px 16px var(--shadow-dark), -8px -8px 16px var(--shadow-light);
+    --shadow-neu-pressed: inset 3px 3px 6px var(--shadow-dark), inset -3px -3px 6px var(--shadow-light);
+}
+
+[data-theme="soft"] .easyweaver-scope [data-slot="card"] {
+    box-shadow: var(--shadow-neu-raised);
+    border-color: transparent;
+}
+
+[data-theme="soft"] .easyweaver-scope [data-slot="card"]:hover {
+    box-shadow: var(--shadow-neu-hover);
+}
+
+[data-theme="soft"] .easyweaver-scope input:not([type="checkbox"]):not([type="radio"]),
+[data-theme="soft"] .easyweaver-scope textarea,
+[data-theme="soft"] .easyweaver-scope [data-slot="input"] {
+    box-shadow: var(--shadow-neu-inset);
+    border-color: transparent;
+    background: var(--input);
+}
+
+[data-theme="soft"] .easyweaver-scope [data-slot="select-trigger"],
+[data-theme="soft"] .easyweaver-scope [role="combobox"] {
+    box-shadow: var(--shadow-neu-raised);
+    border-color: transparent;
+}
+
+[data-theme="soft"] .easyweaver-scope button[data-slot="button"]:not(:disabled):active {
+    box-shadow: var(--shadow-neu-pressed);
+    transform: scale(0.97);
+}
+
+[data-theme="soft"] .easyweaver-scope table thead tr {
+    box-shadow: var(--shadow-neu-raised);
+}
+
+[data-theme="soft"] .easyweaver-scope button,
+[data-theme="soft"] .easyweaver-scope [data-slot="card"],
+[data-theme="soft"] .easyweaver-scope [data-slot="select-trigger"] {
+    transition: box-shadow 200ms ease-out, transform 100ms ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    [data-theme="soft"] .easyweaver-scope button,
+    [data-theme="soft"] .easyweaver-scope [data-slot="card"],
+    [data-theme="soft"] .easyweaver-scope [data-slot="select-trigger"] {
+        transition: none;
+    }
+    [data-theme="soft"] .easyweaver-scope button:active {
+        transform: none;
+    }
+}
+
 /* Base styles for easyweaver embedded components */
 .easyweaver-scope {
     color: var(--foreground);
