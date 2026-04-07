@@ -45,6 +45,10 @@ export interface MySQLCredentials {
   database: string;
   user: string;
   password: string;
+  ssl_mode?: SslMode;
+  ssl_client_cert?: string;
+  ssl_client_key?: string;
+  ssl_ca_cert?: string;
 }
 
 export interface DB2Credentials {

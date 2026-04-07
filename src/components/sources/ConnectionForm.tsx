@@ -379,8 +379,8 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
           password: data.password || '',
         };
 
-        // Add SSL fields for PostgreSQL
-        if (st === 'postgres' && data.ssl_mode && data.ssl_mode !== 'disable') {
+        // Add SSL fields for PostgreSQL and MySQL
+        if ((st === 'postgres' || st === 'mysql') && data.ssl_mode && data.ssl_mode !== 'disable') {
           dbCreds.ssl_mode = data.ssl_mode;
           if (sslCaCert) dbCreds.ssl_ca_cert = sslCaCert;
           if (sslClientCert) dbCreds.ssl_client_cert = sslClientCert;
@@ -593,8 +593,8 @@ export function ConnectionForm({ open, onOpenChange }: Props) {
                 </div>
               </div>
 
-              {/* SSL Configuration (PostgreSQL) */}
-              {sourceType === 'postgres' && (
+              {/* SSL Configuration (PostgreSQL & MySQL) */}
+              {(sourceType === 'postgres' || sourceType === 'mysql') && (
                 <div className="space-y-3 rounded-md border p-3">
                   <div>
                     <Label>SSL Mode</Label>
