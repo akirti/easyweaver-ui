@@ -7,6 +7,7 @@ import type {
   GroupBySpec,
   DistinctSpec,
   DerivedColumnSpec,
+  DataBinding,
 } from '@/types';
 
 export interface DatasetState {
@@ -19,6 +20,7 @@ export interface DatasetState {
   status: 'idle' | 'pending' | 'running' | 'completed' | 'failed';
   rowCount: number | null;
   error: string | null;
+  bindings: DataBinding[];
 }
 
 export interface JoinStep {
@@ -40,6 +42,7 @@ const createDataset = (): DatasetState => ({
   status: 'idle',
   rowCount: null,
   error: null,
+  bindings: [],
 });
 
 const createJoinStep = (): JoinStep => ({
@@ -81,6 +84,7 @@ interface QueryState {
   setDatasetFilters: (index: number, filters: FilterCondition[]) => void;
   setDatasetFilterLogic: (index: number, logic: 'and' | 'or') => void;
   setDatasetRun: (index: number, runId: string | null, status: DatasetState['status'], rowCount?: number | null, error?: string | null) => void;
+  setDatasetBindings: (index: number, bindings: DataBinding[]) => void;
 
   // Join step actions (indexed)
   setJoinConfig: (stepIndex: number, config: JoinConfig | null) => void;
@@ -180,6 +184,11 @@ export const useQueryStore = create<QueryState>((set) => ({
       const joinSteps = invalidateJoinStepsFrom(s.joinSteps, joinFrom);
       return { datasets, joinSteps, ...clearPostJoin() };
     }),
+
+  setDatasetBindings: (index, bindings) =>
+    set((s) => ({
+      datasets: s.datasets.map((ds, i) => (i === index ? { ...ds, bindings } : ds)),
+    })),
 
   // --- Join step actions ---
 

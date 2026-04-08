@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -53,6 +53,38 @@ export function InteractiveQueryBuilder() {
     return `Join ${stepIndex} Result`;
   };
 
+  // Build available binding sources for a dataset (all OTHER completed datasets)
+  const getAvailableSources = (excludeIndex: number) =>
+    store.datasets
+      .map((ds, i) => ({ ...ds, index: i }))
+      .filter((ds) => ds.index !== excludeIndex && ds.status === 'completed' && ds.runId)
+      .map((ds) => ({
+        index: ds.index,
+        label: `Dataset ${String.fromCharCode(65 + ds.index)}`,
+        runId: ds.runId!,
+        status: ds.status,
+        columns: [] as ColumnInfo[],
+        rowCount: ds.rowCount,
+      }));
+
+  // Auto-refresh: when a dataset completes, trigger bound targets
+  const datasetStatuses = store.datasets.map(d => `${d.status}-${d.runId}`).join(',');
+  useEffect(() => {
+    store.datasets.forEach((ds, idx) => {
+      if (ds.status !== 'completed') return;
+      store.datasets.forEach((target, tIdx) => {
+        if (tIdx === idx) return;
+        if (target.status === 'pending' || target.status === 'running') return;
+        const hasAutoBinding = target.bindings.some(
+          (b) => b.source_dataset_index === idx && b.auto_refresh
+        );
+        if (hasAutoBinding) {
+          console.log(`Auto-refresh: Dataset ${String.fromCharCode(65 + tIdx)} should re-run`);
+        }
+      });
+    });
+  }, [datasetStatuses]);
+
   // Apply post-join operations on the final result
   const handleApplyPostJoin = async () => {
     const leftRunId = getLeftRunId(lastJoinIndex);
@@ -82,6 +114,12 @@ export function InteractiveQueryBuilder() {
       distinct: store.postJoinDistinct || undefined,
       sort: store.postJoinSorts,
       transforms: store.postJoinTransforms,
+      bindings: (() => {
+        const allBindingSpecs = store.datasets.flatMap(ds =>
+          ds.bindings.map(({ source_run_id, mode, mappings }) => ({ source_run_id, mode, mappings }))
+        );
+        return allBindingSpecs.length > 0 ? allBindingSpecs : undefined;
+      })(),
     };
 
     try {
@@ -115,6 +153,11 @@ export function InteractiveQueryBuilder() {
                   }
                   removable={idx >= 2}
                   onRemove={() => store.removeDataset(idx)}
+                  bindings={ds.bindings}
+                  onBindingsChange={(b) => store.setDatasetBindings(idx, b)}
+                  availableSources={getAvailableSources(idx)}
+                  datasetIndex={idx}
+                  allBindings={store.datasets.map(d => d.bindings)}
                 />
               );
             })}
@@ -160,6 +203,11 @@ export function InteractiveQueryBuilder() {
                 }
                 removable={idx >= 2}
                 onRemove={() => store.removeDataset(idx)}
+                bindings={ds.bindings}
+                onBindingsChange={(b) => store.setDatasetBindings(idx, b)}
+                availableSources={getAvailableSources(idx)}
+                datasetIndex={idx}
+                allBindings={store.datasets.map(d => d.bindings)}
               />
             </div>
           );

@@ -137,6 +137,25 @@ export interface ValueFromDataset {
   column: string;
 }
 
+export interface BindingMapping {
+  source_column: string;
+  target_column: string;
+}
+
+export interface DataBinding {
+  source_run_id: string;
+  source_dataset_index: number;
+  mode: 'distinct' | 'row_pair';
+  auto_refresh: boolean;
+  mappings: BindingMapping[];
+}
+
+export interface DataBindingSpec {
+  source_run_id: string;
+  mode: 'distinct' | 'row_pair';
+  mappings: BindingMapping[];
+}
+
 export interface FilterCondition {
   column: string;
   operator: 'eq' | 'neq' | 'gt' | 'lt' | 'gte' | 'lte' | 'like' | 'is_null' | 'is_not_null' | 'in' | 'not_in' | 'between';
@@ -189,6 +208,7 @@ export interface QueryRequest {
   join?: JoinConfig;
   sort: SortSpec[];
   transforms?: TransformSpec[];
+  bindings?: DataBindingSpec[];
   page: number;
   page_size: number;
 }
@@ -246,6 +266,7 @@ export interface JoinResultsRequest {
   distinct?: DistinctSpec;
   sort: SortSpec[];
   transforms: TransformSpec[];
+  bindings?: DataBindingSpec[];
 }
 
 export interface QueryRun {

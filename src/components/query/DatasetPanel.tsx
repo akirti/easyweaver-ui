@@ -6,12 +6,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SourceSelector } from './SourceSelector';
 import { FilterBuilder } from './FilterBuilder';
 import { TransformBuilder } from './TransformBuilder';
+import { DataBindingPanel } from './DataBindingPanel';
 import { DataTable } from '@/components/results/DataTable';
 import { useSourceSchema } from '@/queries/use-sources';
 import { useExecuteQuery, useQueryRun } from '@/queries/use-queries';
 import { toast } from 'sonner';
 import type { DatasetState } from '@/stores/query-store';
-import type { FilterCondition, TransformSpec, QueryRequest, ColumnInfo } from '@/types';
+import type { FilterCondition, TransformSpec, QueryRequest, ColumnInfo, DataBinding } from '@/types';
 import type { ReferenceDataset } from './FilterBuilder';
 import { getTypeCategory } from '@/lib/column-types';
 
@@ -27,6 +28,18 @@ interface Props {
   referenceDataset?: ReferenceDataset;
   removable?: boolean;
   onRemove?: () => void;
+  bindings: DataBinding[];
+  onBindingsChange: (bindings: DataBinding[]) => void;
+  availableSources: Array<{
+    index: number;
+    label: string;
+    runId: string;
+    status: string;
+    columns: ColumnInfo[];
+    rowCount: number | null;
+  }>;
+  datasetIndex: number;
+  allBindings: DataBinding[][];
 }
 
 export function DatasetPanel({
@@ -41,9 +54,15 @@ export function DatasetPanel({
   referenceDataset,
   removable,
   onRemove,
+  bindings,
+  onBindingsChange,
+  availableSources,
+  datasetIndex,
+  allBindings,
 }: Props) {
   const [transforms, setTransforms] = useState<TransformSpec[]>([]);
   const [showTransforms, setShowTransforms] = useState(false);
+  const [showBindings, setShowBindings] = useState(false);
 
   const executeMutation = useExecuteQuery();
   const { data: queryRun } = useQueryRun(dataset.runId);
@@ -117,6 +136,9 @@ export function DatasetPanel({
       },
       sort: [],
       transforms: transforms.length > 0 ? transforms : [],
+      bindings: bindings.length > 0
+        ? bindings.map(({ source_run_id, mode, mappings }) => ({ source_run_id, mode, mappings }))
+        : undefined,
       page: 1,
       page_size: 50,
     };
@@ -199,6 +221,31 @@ export function DatasetPanel({
                   columns={tableColumns}
                   transforms={transforms}
                   onChange={setTransforms}
+                />
+              </div>
+            )}
+          </div>
+        )}
+
+        {availableSources.length > 0 && tableColumns.length > 0 && (
+          <div>
+            <button
+              type="button"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setShowBindings(!showBindings)}
+            >
+              {showBindings ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              Data Bindings{bindings.length > 0 && ` (${bindings.length})`}
+            </button>
+            {showBindings && (
+              <div className="mt-1">
+                <DataBindingPanel
+                  availableSources={availableSources}
+                  targetColumns={tableColumns}
+                  bindings={bindings}
+                  onChange={onBindingsChange}
+                  datasetIndex={datasetIndex}
+                  allBindings={allBindings}
                 />
               </div>
             )}
