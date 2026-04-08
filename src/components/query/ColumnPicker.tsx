@@ -69,39 +69,39 @@ function SortableColumnItem({ column, isPinned, onRemove, onTogglePin }: Sortabl
       ref={setNodeRef}
       style={style}
       className={cn(
-        'flex items-center gap-1.5 rounded-md border bg-card px-2 py-1 text-xs',
+        'flex items-center gap-1 rounded-md border bg-card px-1.5 py-1 text-xs min-w-0 overflow-hidden',
         isDragging && 'opacity-50 shadow-lg',
       )}
     >
       <button
         type="button"
-        className="cursor-grab text-muted-foreground hover:text-foreground"
+        className="flex-shrink-0 cursor-grab text-muted-foreground hover:text-foreground"
         aria-label={`Drag to reorder ${column.name}`}
         {...attributes}
         {...listeners}
       >
-        <GripVertical className="h-3.5 w-3.5" />
+        <GripVertical className="h-3 w-3" />
       </button>
-      <span className="flex-1 truncate font-medium">{column.name}</span>
-      <TypeBadge type={column.type} />
+      <span className="flex-1 truncate font-medium min-w-0">{column.name}</span>
+      <TypeBadge type={column.type} className="flex-shrink-0" />
       <button
         type="button"
         onClick={() => onTogglePin(column.name)}
         className={cn(
-          'rounded p-0.5 hover:bg-accent',
+          'flex-shrink-0 rounded p-0.5 hover:bg-accent',
           isPinned ? 'text-primary' : 'text-muted-foreground',
         )}
         aria-label={isPinned ? `Unpin ${column.name}` : `Pin ${column.name}`}
       >
-        <Pin className={cn('h-3.5 w-3.5', isPinned && 'fill-current')} />
+        <Pin className={cn('h-3 w-3', isPinned && 'fill-current')} />
       </button>
       <button
         type="button"
         onClick={() => onRemove(column.name)}
-        className="rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+        className="flex-shrink-0 rounded p-0.5 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         aria-label={`Remove ${column.name}`}
       >
-        <X className="h-3.5 w-3.5" />
+        <X className="h-3 w-3" />
       </button>
     </div>
   );
@@ -332,17 +332,17 @@ export function ColumnPicker({
             {availableColumns.map((col) => (
               <div
                 key={col.name}
-                className="flex items-center gap-1.5 rounded-md border bg-card px-2 py-1 text-xs"
+                className="flex items-center gap-1 rounded-md border bg-card px-1.5 py-1 text-xs min-w-0 overflow-hidden"
               >
-                <span className="flex-1 truncate">{col.name}</span>
-                <TypeBadge type={col.type} />
+                <span className="flex-1 truncate min-w-0">{col.name}</span>
+                <TypeBadge type={col.type} className="flex-shrink-0" />
                 <button
                   type="button"
                   onClick={() => handleAdd(col.name)}
-                  className="rounded p-0.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
+                  className="flex-shrink-0 rounded p-0.5 text-muted-foreground hover:bg-primary/10 hover:text-primary"
                   aria-label={`Add ${col.name}`}
                 >
-                  <Plus className="h-3.5 w-3.5" />
+                  <Plus className="h-3 w-3" />
                 </button>
               </div>
             ))}
