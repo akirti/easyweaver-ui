@@ -88,6 +88,7 @@ const TRANSFORM_SETS: Record<TypeCategory, TransformDef[]> = {
     { value: 'rename', label: 'Rename' },
     { value: 'round', label: 'Round' },
     { value: 'cast', label: 'Cast' },
+    { value: 'pad_left', label: 'Pad Left' },
   ],
   text: [
     { value: 'rename', label: 'Rename' },
@@ -95,6 +96,10 @@ const TRANSFORM_SETS: Record<TypeCategory, TransformDef[]> = {
     { value: 'lowercase', label: 'Lowercase' },
     { value: 'trim', label: 'Trim' },
     { value: 'cast', label: 'Cast' },
+    { value: 'strip_leading_zeros', label: 'Strip Leading Zeros' },
+    { value: 'replace', label: 'Replace' },
+    { value: 'substring', label: 'Substring' },
+    { value: 'pad_left', label: 'Pad Left' },
   ],
   datetime: [
     { value: 'rename', label: 'Rename' },
@@ -108,6 +113,10 @@ const TRANSFORM_SETS: Record<TypeCategory, TransformDef[]> = {
   other: [
     { value: 'rename', label: 'Rename' },
     { value: 'cast', label: 'Cast' },
+    { value: 'strip_leading_zeros', label: 'Strip Leading Zeros' },
+    { value: 'replace', label: 'Replace' },
+    { value: 'substring', label: 'Substring' },
+    { value: 'pad_left', label: 'Pad Left' },
   ],
 };
 

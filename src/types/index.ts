@@ -150,7 +150,7 @@ export interface SortSpec {
   direction: 'asc' | 'desc';
 }
 
-export type TransformType = 'rename' | 'format_date' | 'round' | 'uppercase' | 'lowercase' | 'trim' | 'cast';
+export type TransformType = 'rename' | 'format_date' | 'round' | 'uppercase' | 'lowercase' | 'trim' | 'cast' | 'strip_leading_zeros' | 'pad_left' | 'replace' | 'substring';
 export type CastTargetType = 'string' | 'integer' | 'float' | 'boolean' | 'date' | 'datetime';
 
 export interface TransformSpec {
@@ -160,6 +160,12 @@ export interface TransformSpec {
   date_format?: string;
   decimals?: number;
   target_type?: CastTargetType;
+  pad_char?: string;
+  pad_length?: number;
+  find_str?: string;
+  replace_str?: string;
+  start?: number;
+  length?: number;
 }
 
 export interface QuerySourceConfig {
@@ -182,6 +188,7 @@ export interface QueryRequest {
   right?: QuerySourceConfig;
   join?: JoinConfig;
   sort: SortSpec[];
+  transforms?: TransformSpec[];
   page: number;
   page_size: number;
 }

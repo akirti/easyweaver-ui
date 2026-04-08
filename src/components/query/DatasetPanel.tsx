@@ -1,16 +1,17 @@
-import { useEffect } from 'react';
-import { Play, Loader2, CheckCircle2, XCircle, X } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Play, Loader2, CheckCircle2, XCircle, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SourceSelector } from './SourceSelector';
 import { FilterBuilder } from './FilterBuilder';
+import { TransformBuilder } from './TransformBuilder';
 import { DataTable } from '@/components/results/DataTable';
 import { useSourceSchema } from '@/queries/use-sources';
 import { useExecuteQuery, useQueryRun } from '@/queries/use-queries';
 import { toast } from 'sonner';
 import type { DatasetState } from '@/stores/query-store';
-import type { FilterCondition, QueryRequest, ColumnInfo } from '@/types';
+import type { FilterCondition, TransformSpec, QueryRequest, ColumnInfo } from '@/types';
 import type { ReferenceDataset } from './FilterBuilder';
 import { getTypeCategory } from '@/lib/column-types';
 
@@ -41,6 +42,9 @@ export function DatasetPanel({
   removable,
   onRemove,
 }: Props) {
+  const [transforms, setTransforms] = useState<TransformSpec[]>([]);
+  const [showTransforms, setShowTransforms] = useState(false);
+
   const executeMutation = useExecuteQuery();
   const { data: queryRun } = useQueryRun(dataset.runId);
   const { data: schema } = useSourceSchema(dataset.sourceId || '');
@@ -112,6 +116,7 @@ export function DatasetPanel({
         filter_logic: dataset.filterLogic,
       },
       sort: [],
+      transforms: transforms.length > 0 ? transforms : [],
       page: 1,
       page_size: 50,
     };
@@ -175,6 +180,28 @@ export function DatasetPanel({
               filterLogic={dataset.filterLogic}
               onLogicChange={onFilterLogicChange}
             />
+          </div>
+        )}
+
+        {tableColumns.length > 0 && (
+          <div>
+            <button
+              type="button"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setShowTransforms(!showTransforms)}
+            >
+              {showTransforms ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              Transforms{transforms.length > 0 && ` (${transforms.length})`}
+            </button>
+            {showTransforms && (
+              <div className="mt-1">
+                <TransformBuilder
+                  columns={tableColumns}
+                  transforms={transforms}
+                  onChange={setTransforms}
+                />
+              </div>
+            )}
           </div>
         )}
 

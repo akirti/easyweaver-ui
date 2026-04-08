@@ -138,7 +138,7 @@ export function TransformBuilder({ columns, transforms, onChange }: Props) {
         const availableTransforms = getTransformsForType(category);
 
         return (
-          <div key={i} className="flex items-center gap-2">
+          <div key={`${transform.column}-${transform.type}-${i}`} className="flex items-center gap-2">
             {/* Column selector */}
             <Select
               value={transform.column}
@@ -200,7 +200,7 @@ export function TransformBuilder({ columns, transforms, onChange }: Props) {
                 placeholder="Decimals"
                 value={transform.decimals ?? ''}
                 onChange={(e) =>
-                  updateTransform(i, { ...transform, decimals: parseInt(e.target.value) || 0 })
+                  updateTransform(i, { ...transform, decimals: Number.parseInt(e.target.value) || 0 })
                 }
               />
             )}
@@ -223,6 +223,81 @@ export function TransformBuilder({ columns, transforms, onChange }: Props) {
                   ))}
                 </SelectContent>
               </Select>
+            )}
+
+            {/* strip_leading_zeros — no params, just casts to string and strips */}
+            {transform.type === 'strip_leading_zeros' && (
+              <div className="flex-1 text-xs text-muted-foreground self-center">
+                Remove leading zeros (e.g. 00123 → 123)
+              </div>
+            )}
+
+            {/* pad_left — pad character + target length */}
+            {transform.type === 'pad_left' && (
+              <>
+                <Input
+                  className="w-16"
+                  maxLength={1}
+                  placeholder="0"
+                  value={transform.pad_char || ''}
+                  onChange={(e) => updateTransform(i, { ...transform, pad_char: e.target.value })}
+                />
+                <Input
+                  type="number"
+                  className="w-20"
+                  min={1}
+                  max={50}
+                  placeholder="Length"
+                  value={transform.pad_length ?? ''}
+                  onChange={(e) =>
+                    updateTransform(i, { ...transform, pad_length: Number.parseInt(e.target.value) || 0 })
+                  }
+                />
+              </>
+            )}
+
+            {/* replace — find and replace strings */}
+            {transform.type === 'replace' && (
+              <>
+                <Input
+                  className="flex-1"
+                  placeholder="Find"
+                  value={transform.find_str || ''}
+                  onChange={(e) => updateTransform(i, { ...transform, find_str: e.target.value })}
+                />
+                <Input
+                  className="flex-1"
+                  placeholder="Replace with"
+                  value={transform.replace_str || ''}
+                  onChange={(e) => updateTransform(i, { ...transform, replace_str: e.target.value })}
+                />
+              </>
+            )}
+
+            {/* substring — start offset + length */}
+            {transform.type === 'substring' && (
+              <>
+                <Input
+                  type="number"
+                  className="w-20"
+                  min={0}
+                  placeholder="Start"
+                  value={transform.start ?? ''}
+                  onChange={(e) =>
+                    updateTransform(i, { ...transform, start: Number.parseInt(e.target.value) || 0 })
+                  }
+                />
+                <Input
+                  type="number"
+                  className="w-20"
+                  min={1}
+                  placeholder="Length"
+                  value={transform.length ?? ''}
+                  onChange={(e) =>
+                    updateTransform(i, { ...transform, length: Number.parseInt(e.target.value) || undefined })
+                  }
+                />
+              </>
             )}
 
             {/* No extra params for uppercase/lowercase/trim */}
