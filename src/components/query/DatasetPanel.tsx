@@ -6,13 +6,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { SourceSelector } from './SourceSelector';
 import { FilterBuilder } from './FilterBuilder';
 import { TransformBuilder } from './TransformBuilder';
+import { SortConfigurator } from './SortConfigurator';
+import { GroupByBuilder } from './GroupByBuilder';
 import { DataBindingPanel } from './DataBindingPanel';
 import { DataTable } from '@/components/results/DataTable';
 import { useSourceSchema } from '@/queries/use-sources';
 import { useExecuteQuery, useQueryRun } from '@/queries/use-queries';
 import { toast } from 'sonner';
 import type { DatasetState } from '@/stores/query-store';
-import type { FilterCondition, TransformSpec, QueryRequest, ColumnInfo, DataBinding } from '@/types';
+import type { FilterCondition, TransformSpec, QueryRequest, ColumnInfo, DataBinding, SortSpec, GroupBySpec } from '@/types';
 import type { ReferenceDataset } from './FilterBuilder';
 import { getTypeCategory } from '@/lib/column-types';
 
@@ -61,7 +63,10 @@ export function DatasetPanel({
   allBindings,
 }: Props) {
   const [transforms, setTransforms] = useState<TransformSpec[]>([]);
+  const [sorts, setSorts] = useState<SortSpec[]>([]);
+  const [groupBy, setGroupBy] = useState<GroupBySpec | null>(null);
   const [showTransforms, setShowTransforms] = useState(false);
+  const [showSortGroup, setShowSortGroup] = useState(false);
   const [showBindings, setShowBindings] = useState(false);
 
   const executeMutation = useExecuteQuery();
@@ -134,7 +139,8 @@ export function DatasetPanel({
         filters: processedFilters,
         filter_logic: dataset.filterLogic,
       },
-      sort: [],
+      sort: sorts,
+      group_by: groupBy || undefined,
       transforms: transforms.length > 0 ? transforms : [],
       bindings: bindings.length > 0
         ? bindings.map(({ source_run_id, mode, mappings }) => ({ source_run_id, mode, mappings }))
@@ -247,6 +253,31 @@ export function DatasetPanel({
                   datasetIndex={datasetIndex}
                   allBindings={allBindings}
                 />
+              </div>
+            )}
+          </div>
+        )}
+
+        {tableColumns.length > 0 && (
+          <div>
+            <button
+              type="button"
+              className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+              onClick={() => setShowSortGroup(!showSortGroup)}
+            >
+              {showSortGroup ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+              Sort & Group{(sorts.length > 0 || groupBy) && ` (${sorts.length + (groupBy ? 1 : 0)})`}
+            </button>
+            {showSortGroup && (
+              <div className="mt-1 space-y-3">
+                <div>
+                  <Label className="text-xs text-muted-foreground">Sort</Label>
+                  <SortConfigurator columns={tableColumns} sorts={sorts} onChange={setSorts} />
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">Group By</Label>
+                  <GroupByBuilder columns={tableColumns} groupBy={groupBy} onChange={setGroupBy} />
+                </div>
               </div>
             )}
           </div>

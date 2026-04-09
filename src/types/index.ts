@@ -209,6 +209,8 @@ export interface QueryRequest {
   sort: SortSpec[];
   transforms?: TransformSpec[];
   bindings?: DataBindingSpec[];
+  group_by?: GroupBySpec;
+  distinct?: DistinctSpec;
   page: number;
   page_size: number;
 }

@@ -28,6 +28,13 @@ export function InteractiveQueryBuilder() {
   const lastJoinStep = store.joinSteps[lastJoinIndex];
   const finalRunId = lastJoinStep?.status === 'completed' ? lastJoinStep.runId : null;
 
+  // Allow save when we have any completed result (join or single dataset)
+  const singleDatasetRunId = store.datasets.length >= 1 && store.datasets[0]?.status === 'completed'
+    ? store.datasets[0].runId
+    : null;
+  const canSave = finalRunId || singleDatasetRunId;
+  const activeRunId = finalRunId || singleDatasetRunId;
+
   // Fetch columns from the final join result for post-join filters
   const { data: finalResultData } = useQueryResults(finalRunId, { page: 1, page_size: 1 });
   const finalColumns: ColumnInfo[] = (finalResultData?.columns || []).map((c) => ({
@@ -224,7 +231,7 @@ export function InteractiveQueryBuilder() {
           <Plus className="mr-2 h-4 w-4" />
           Add Dataset {String.fromCharCode(65 + store.datasets.length)}
         </Button>
-        {finalRunId && (
+        {canSave && (
           <Button variant="outline" onClick={() => setSaveDialogOpen(true)}>
             <Save className="mr-2 h-4 w-4" />
             Save as Process
@@ -305,6 +312,18 @@ export function InteractiveQueryBuilder() {
           </CardHeader>
           <CardContent>
             <DataTable runId={finalRunId} />
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Single dataset results — when no join is completed but dataset A is done */}
+      {!finalRunId && singleDatasetRunId && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Dataset A Results</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <DataTable runId={singleDatasetRunId} />
           </CardContent>
         </Card>
       )}
