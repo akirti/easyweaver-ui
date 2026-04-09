@@ -11,7 +11,12 @@ node_modules
 dist
 dist-ssr
 *.local
-
+e2e/**
+e2e
+**/e2e/**
+**/test-results/**
+test-results
+test-results/**
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -22,3 +27,4 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+package-lock.json

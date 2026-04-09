@@ -17,7 +17,6 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { GripVertical, Pin, Plus, Search, X } from 'lucide-react';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { TypeBadge } from '@/components/query/TypeBadge';
@@ -294,7 +293,7 @@ export function ColumnPicker({
         <div className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Selected ({selectedColumns.length})
         </div>
-        <ScrollArea className="max-h-[280px]">
+        <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
           <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
@@ -319,7 +318,7 @@ export function ColumnPicker({
               No columns selected
             </div>
           )}
-        </ScrollArea>
+        </div>
       </div>
 
       {/* Available columns — 2-column grid layout */}
@@ -327,7 +326,7 @@ export function ColumnPicker({
         <div className="mb-1 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
           Available ({availableColumns.length})
         </div>
-        <ScrollArea className="max-h-[280px]">
+        <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
           <div className="grid grid-cols-1 gap-1 sm:grid-cols-2 lg:grid-cols-2 pr-2">
             {availableColumns.map((col) => (
               <div
@@ -354,7 +353,7 @@ export function ColumnPicker({
                 : 'No columns match filters'}
             </div>
           )}
-        </ScrollArea>
+        </div>
       </div>
     </div>
   );
