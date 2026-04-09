@@ -400,6 +400,7 @@ export interface ProcessConfigurationCreate {
 
 export interface ProcessRunRequest {
   param_values?: Record<string, unknown>;
+  max_rows: number;
   save_results_to_gcp?: boolean;
   config_source?: 'auto' | 'mongodb' | 'gcp';
 }
@@ -476,3 +477,35 @@ export interface DataSnapshot {
   row_count: number;
   captured_at: string;
 }
+
+// ── WebSocket message types for process execution ──────────────────────
+
+// Client → Server
+export type WsClientMessage =
+  | { type: 'start'; param_values: Record<string, unknown>; max_rows: number; target_batch_seconds?: number }
+  | { type: 'attach'; run_id: string }
+  | { type: 'pause' }
+  | { type: 'resume' }
+  | { type: 'set_batch_size'; batch_size: number }
+  | { type: 'set_target_seconds'; target_seconds: number }
+  | { type: 'cancel' };
+
+// Server → Client
+export type WsServerMessage =
+  | { type: 'run_started'; run_id: string; phases: string[]; datasets: string[]; dag: Record<string, string[]> }
+  | { type: 'phase'; phase: string; phase_index: number; total_phases: number }
+  | { type: 'fetch_progress'; dataset: string; rows_fetched: number; batch_number: number; batch_size: number; batch_time_ms: number; status: string; depends_on: string | null }
+  | { type: 'fetch_complete'; dataset: string; total_rows: number }
+  | { type: 'fetch_waiting'; dataset: string; waiting_for: string[]; reason?: string }
+  | { type: 'fetch_started'; dataset: string; binding_resolved: boolean; filter_values_count?: number }
+  | { type: 'join_progress'; step_key: string; left: string; right: string; status: string }
+  | { type: 'join_complete'; step_key: string; rows: number }
+  | { type: 'transform_progress'; operation: string; step: number; total_steps: number }
+  | { type: 'batch_adjusted'; dataset: string; old_batch_size: number; new_batch_size: number; reason: string }
+  | { type: 'paused' }
+  | { type: 'resumed' }
+  | { type: 'completed'; run_id: string; total_rows: number }
+  | { type: 'error'; message: string; dataset?: string }
+  | { type: 'cancelled' }
+  | { type: 'state_snapshot'; progress: Record<string, unknown>; control: Record<string, unknown> }
+  | { type: 'attached'; run_id: string };
