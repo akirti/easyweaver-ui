@@ -15,6 +15,7 @@ import { getTypeCategory, getOperatorsForType, isDateOnly, type TypeCategory } f
 import { FilterBooleanToggle } from './FilterBooleanToggle';
 import { FilterValueSelect } from './FilterValueSelect';
 import { FilterValueMultiSelect } from './FilterValueMultiSelect';
+import { ColumnCombobox } from './ColumnCombobox';
 
 const NO_VALUE_OPS = ['is_null', 'is_not_null'];
 const CROSS_DATASET_OPS = ['in', 'not_in'];
@@ -288,22 +289,12 @@ export function FilterBuilder({
         return (
           <div key={i} className="flex items-start gap-2">
             {/* Column selector */}
-            <Select
+            <ColumnCombobox
+              columns={columns}
               value={filter.column}
-              onValueChange={(v) => updateFilter(i, { column: v })}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper" className="max-h-60">
-                {columns.map((col) => (
-                  <SelectItem key={col.name} value={col.name}>
-                    <span>{col.name}</span>
-                    <span className="ml-1 text-xs text-muted-foreground">({col.type})</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(v) => updateFilter(i, { column: v })}
+              className="w-40"
+            />
 
             {/* Operator selector — filtered by column type */}
             <Select
@@ -427,18 +418,13 @@ export function FilterBuilder({
                       onChange={(v) => updateFilter(i, { value: v })}
                     />
                     {canUseReference && (
-                      <Select onValueChange={(col) => setValueFrom(i, col)}>
-                        <SelectTrigger className="w-40 shrink-0">
-                          <SelectValue placeholder="From dataset..." />
-                        </SelectTrigger>
-                        <SelectContent position="popper" className="max-h-60">
-                          {referenceDataset!.columns.map((col) => (
-                            <SelectItem key={col.name} value={col.name}>
-                              {referenceDataset!.label}.{col.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <ColumnCombobox
+                        columns={referenceDataset!.columns}
+                        value=""
+                        onChange={(col) => setValueFrom(i, col)}
+                        placeholder="From dataset..."
+                        className="w-40 shrink-0"
+                      />
                     )}
                   </div>
                 ) : (
@@ -450,18 +436,13 @@ export function FilterBuilder({
                       onChange={(e) => updateFilter(i, { value: e.target.value })}
                     />
                     {canUseReference && (
-                      <Select onValueChange={(col) => setValueFrom(i, col)}>
-                        <SelectTrigger className="w-40 shrink-0">
-                          <SelectValue placeholder="From dataset..." />
-                        </SelectTrigger>
-                        <SelectContent position="popper" className="max-h-60">
-                          {referenceDataset!.columns.map((col) => (
-                            <SelectItem key={col.name} value={col.name}>
-                              {referenceDataset!.label}.{col.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <ColumnCombobox
+                        columns={referenceDataset!.columns}
+                        value=""
+                        onChange={(col) => setValueFrom(i, col)}
+                        placeholder="From dataset..."
+                        className="w-40 shrink-0"
+                      />
                     )}
                   </div>
                 )}

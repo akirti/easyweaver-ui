@@ -10,6 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { TransformSpec, TransformType, CastTargetType, ColumnInfo } from '@/types';
+import { ColumnCombobox } from './ColumnCombobox';
 import {
   getTypeCategory,
   getTransformsForType,
@@ -140,22 +141,12 @@ export function TransformBuilder({ columns, transforms, onChange }: Props) {
         return (
           <div key={`${transform.column}-${transform.type}-${i}`} className="flex items-center gap-2">
             {/* Column selector */}
-            <Select
+            <ColumnCombobox
+              columns={columns}
               value={transform.column}
-              onValueChange={(v) => updateTransform(i, { column: v })}
-            >
-              <SelectTrigger className="w-40">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent position="popper" className="max-h-60">
-                {columns.map((col) => (
-                  <SelectItem key={col.name} value={col.name}>
-                    <span>{col.name}</span>
-                    <span className="ml-1 text-xs text-muted-foreground">({col.type})</span>
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              onChange={(v) => updateTransform(i, { column: v })}
+              className="w-40"
+            />
 
             {/* Transform type selector */}
             <Select

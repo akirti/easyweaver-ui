@@ -7,6 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ColumnCombobox } from './ColumnCombobox';
 import type { SortSpec, ColumnInfo } from '@/types';
 
 interface Props {
@@ -32,21 +33,12 @@ export function SortConfigurator({ columns, sorts, onChange }: Props) {
     <div className="space-y-2">
       {sorts.map((sort, i) => (
         <div key={i} className="flex items-center gap-2">
-          <Select
+          <ColumnCombobox
+            columns={columns}
             value={sort.column}
-            onValueChange={(v) => updateSort(i, { column: v })}
-          >
-            <SelectTrigger className="w-40">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {columns.map((col) => (
-                <SelectItem key={col.name} value={col.name}>
-                  {col.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            onChange={(v) => updateSort(i, { column: v })}
+            className="w-40"
+          />
 
           <Select
             value={sort.direction}

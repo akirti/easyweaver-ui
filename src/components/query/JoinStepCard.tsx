@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { ColumnCombobox } from './ColumnCombobox';
 import { useQueryResults, useJoinResults, useQueryRun } from '@/queries/use-queries';
 import { useQueryStore, type JoinStep } from '@/stores/query-store';
 import { toast } from 'sonner';
@@ -197,39 +198,23 @@ export function JoinStepCard({
             return (
               <div key={i} className="space-y-1">
                 <div className="flex items-center gap-2">
-                  <Select
+                  <ColumnCombobox
+                    columns={leftColumns}
                     value={pair.left || ''}
-                    onValueChange={(v) => updatePair(i, 'left', v)}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={`${leftLabel} column`} />
-                    </SelectTrigger>
-                    <SelectContent position="popper" className="max-h-60">
-                      {leftColumns.map((col) => (
-                        <SelectItem key={col.name} value={col.name}>
-                          {col.name} ({col.type})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(v) => updatePair(i, 'left', v)}
+                    placeholder={`${leftLabel} column`}
+                    className="flex-1"
+                  />
 
                   <span className="text-sm text-muted-foreground">=</span>
 
-                  <Select
+                  <ColumnCombobox
+                    columns={rightColumns}
                     value={pair.right || ''}
-                    onValueChange={(v) => updatePair(i, 'right', v)}
-                  >
-                    <SelectTrigger className="flex-1">
-                      <SelectValue placeholder={`${rightLabel} column`} />
-                    </SelectTrigger>
-                    <SelectContent position="popper" className="max-h-60">
-                      {rightColumns.map((col) => (
-                        <SelectItem key={col.name} value={col.name}>
-                          {col.name} ({col.type})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(v) => updatePair(i, 'right', v)}
+                    placeholder={`${rightLabel} column`}
+                    className="flex-1"
+                  />
 
                   {pairs.length > 1 && (
                     <Button

@@ -10,6 +10,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import type { ColumnInfo, DataBinding, BindingMapping } from '@/types';
+import { ColumnCombobox } from './ColumnCombobox';
 import { getTypeCategory } from '@/lib/column-types';
 import { queriesApi } from '@/api/queries';
 
@@ -292,42 +293,24 @@ export function DataBindingPanel({
               {binding.mappings.map((mapping, mi) => (
                 <div key={`${mapping.target_column}-${mapping.source_column}-${mi}`} className="flex items-center gap-2">
                   {/* Target column */}
-                  <Select
+                  <ColumnCombobox
+                    columns={targetColumns}
                     value={mapping.target_column || ''}
-                    onValueChange={(v) => updateMapping(bi, mi, { target_column: v })}
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Target column..." />
-                    </SelectTrigger>
-                    <SelectContent position="popper" className="max-h-60">
-                      {targetColumns.map((col) => (
-                        <SelectItem key={col.name} value={col.name}>
-                          <span>{col.name}</span>
-                          <span className="ml-1 text-xs text-muted-foreground">({col.type})</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(v) => updateMapping(bi, mi, { target_column: v })}
+                    placeholder="Target column..."
+                    className="w-40"
+                  />
 
                   <span className="text-xs text-muted-foreground">&larr;</span>
 
                   {/* Source column */}
-                  <Select
+                  <ColumnCombobox
+                    columns={sourceColumns}
                     value={mapping.source_column || ''}
-                    onValueChange={(v) => updateMapping(bi, mi, { source_column: v })}
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue placeholder="Source column..." />
-                    </SelectTrigger>
-                    <SelectContent position="popper" className="max-h-60">
-                      {sourceColumns.map((col) => (
-                        <SelectItem key={col.name} value={col.name}>
-                          <span>{col.name}</span>
-                          <span className="ml-1 text-xs text-muted-foreground">({col.type})</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(v) => updateMapping(bi, mi, { source_column: v })}
+                    placeholder="Source column..."
+                    className="w-40"
+                  />
 
                   {/* Type mismatch warning */}
                   <TypeMismatchIcon

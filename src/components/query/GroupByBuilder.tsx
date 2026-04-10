@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ColumnCombobox } from './ColumnCombobox';
 import { getTypeCategory, type TypeCategory } from '@/lib/column-types';
 import type { ColumnInfo, GroupBySpec, AggregationSpec, AggFunction } from '@/types';
 
@@ -149,19 +150,13 @@ export function GroupByBuilder({ columns, groupBy, onChange }: Props) {
                 </Badge>
               ))}
               {availableGroupCols.length > 0 && (
-                <Select onValueChange={addGroupColumn}>
-                  <SelectTrigger className="h-7 w-40 text-xs">
-                    <SelectValue placeholder="Add column..." />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="max-h-60">
-                    {availableGroupCols.map((col) => (
-                      <SelectItem key={col.name} value={col.name}>
-                        {col.name}
-                        <span className="ml-1 text-xs text-muted-foreground">({col.type})</span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ColumnCombobox
+                  columns={availableGroupCols}
+                  value=""
+                  onChange={addGroupColumn}
+                  placeholder="Add column..."
+                  className="h-7 w-40 text-xs"
+                />
               )}
             </div>
           </div>
@@ -176,22 +171,12 @@ export function GroupByBuilder({ columns, groupBy, onChange }: Props) {
 
               return (
                 <div key={i} className="flex items-center gap-2">
-                  <Select
+                  <ColumnCombobox
+                    columns={columns}
                     value={agg.column}
-                    onValueChange={(v) => updateAggregation(i, { column: v })}
-                  >
-                    <SelectTrigger className="w-40">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent position="popper" className="max-h-60">
-                      {columns.map((col) => (
-                        <SelectItem key={col.name} value={col.name}>
-                          {col.name}
-                          <span className="ml-1 text-xs text-muted-foreground">({col.type})</span>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    onChange={(v) => updateAggregation(i, { column: v })}
+                    className="w-40"
+                  />
 
                   <Select
                     value={agg.function}

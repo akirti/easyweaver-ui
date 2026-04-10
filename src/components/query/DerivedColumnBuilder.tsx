@@ -12,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { ColumnCombobox } from './ColumnCombobox';
 import { getTypeCategory } from '@/lib/column-types';
 import type {
   ColumnInfo,
@@ -231,19 +232,13 @@ export function DerivedColumnBuilder({ columns, derivedColumns, onChange }: Prop
                 <>
                   <div className="flex items-center gap-2">
                     <Label className="text-xs w-24 shrink-0">Source</Label>
-                    <Select
+                    <ColumnCombobox
+                      columns={datetimeCols.length > 0 ? datetimeCols : columns}
                       value={spec.source_column || ''}
-                      onValueChange={(v) => update(i, { source_column: v })}
-                    >
-                      <SelectTrigger className="h-7 text-sm">
-                        <SelectValue placeholder="Select column" />
-                      </SelectTrigger>
-                      <SelectContent position="popper">
-                        {(datetimeCols.length > 0 ? datetimeCols : columns).map((col) => (
-                          <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(v) => update(i, { source_column: v })}
+                      placeholder="Select column"
+                      className="h-7 text-sm flex-1"
+                    />
                   </div>
                   <div className="flex items-center gap-2">
                     <Label className="text-xs w-24 shrink-0">Part</Label>
@@ -268,19 +263,13 @@ export function DerivedColumnBuilder({ columns, derivedColumns, onChange }: Prop
                 <>
                   <div className="flex items-center gap-2">
                     <Label className="text-xs w-24 shrink-0">If Column</Label>
-                    <Select
+                    <ColumnCombobox
+                      columns={columns}
                       value={spec.condition_column || ''}
-                      onValueChange={(v) => update(i, { condition_column: v })}
-                    >
-                      <SelectTrigger className="h-7 flex-1 text-sm">
-                        <SelectValue placeholder="Column" />
-                      </SelectTrigger>
-                      <SelectContent position="popper" className="max-h-60">
-                        {columns.map((col) => (
-                          <SelectItem key={col.name} value={col.name}>{col.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      onChange={(v) => update(i, { condition_column: v })}
+                      placeholder="Column"
+                      className="h-7 flex-1 text-sm"
+                    />
                     <Select
                       value={spec.condition_operator || 'eq'}
                       onValueChange={(v) => update(i, { condition_operator: v })}

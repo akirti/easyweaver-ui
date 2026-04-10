@@ -9,6 +9,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { ColumnCombobox } from './ColumnCombobox';
 import type { ColumnInfo, DistinctSpec } from '@/types';
 
 interface Props {
@@ -100,18 +101,13 @@ export function DistinctBuilder({ columns, distinct, onChange }: Props) {
                 </Badge>
               ))}
               {availableCols.length > 0 && (
-                <Select onValueChange={addColumn}>
-                  <SelectTrigger className="h-7 w-40 text-xs">
-                    <SelectValue placeholder="Add column..." />
-                  </SelectTrigger>
-                  <SelectContent position="popper" className="max-h-60">
-                    {availableCols.map((col) => (
-                      <SelectItem key={col.name} value={col.name}>
-                        {col.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <ColumnCombobox
+                  columns={availableCols}
+                  value=""
+                  onChange={addColumn}
+                  placeholder="Add column..."
+                  className="h-7 w-40 text-xs"
+                />
               )}
             </div>
           )}
