@@ -8,6 +8,10 @@ import type {
   QueryResults,
 } from '@/types';
 
+export const settingsApi = {
+  get: () => client.get<{ max_result_rows: number }>('/settings').then((r) => r.data),
+};
+
 export const processesApi = {
   list: () => client.get<ProcessConfiguration[]>('/processes').then((r) => r.data),
 

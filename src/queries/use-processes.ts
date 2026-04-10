@@ -1,6 +1,14 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from '@tanstack/react-query';
-import { processesApi } from '@/api/processes';
+import { processesApi, settingsApi } from '@/api/processes';
 import type { ProcessConfigurationCreate, ProcessRunRequest } from '@/types';
+
+export function useAppSettings() {
+  return useQuery({
+    queryKey: ['appSettings'],
+    queryFn: settingsApi.get,
+    staleTime: 5 * 60 * 1000, // cache for 5 minutes
+  });
+}
 
 export function useProcessConfigurations() {
   return useQuery({ queryKey: ['processes'], queryFn: processesApi.list });
