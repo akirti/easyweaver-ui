@@ -46,6 +46,7 @@ interface ParamCandidate {
   enabled: boolean;
   paramName: string;
   paramType: ParamDefinition['type'];
+  optionsSource?: { source_id: string; table: string; column: string };
 }
 
 function categoryToParamType(category: string): ParamDefinition['type'] {
@@ -55,6 +56,21 @@ function categoryToParamType(category: string): ParamDefinition['type'] {
     case 'boolean': return 'boolean';
     default: return 'string';
   }
+}
+
+/**
+ * Refine param type based on filter operator.
+ * - in / not_in → multi_select
+ * - eq / neq → select (for string columns only; numbers stay number)
+ */
+function refineParamType(
+  baseType: ParamDefinition['type'],
+  operator: string,
+): ParamDefinition['type'] {
+  if (operator === 'in' || operator === 'not_in') return 'multi_select';
+  if ((operator === 'eq' || operator === 'neq') && baseType === 'string') return 'select';
+  if (baseType === 'boolean') return 'boolean_truefalse';
+  return baseType;
 }
 
 export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps) {
@@ -111,9 +127,11 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
     store.datasets.forEach((ds, dsIdx) => {
       ds.filters.forEach((f, fIdx) => {
         if (f.value !== undefined && f.value !== null && f.value !== '') {
-          const inferredType = ds.sourceId && ds.table
+          const baseType = ds.sourceId && ds.table
             ? getColumnType(ds.sourceId, ds.table, f.column)
             : (typeof f.value === 'number' ? 'number' : 'string');
+          const inferredType = refineParamType(baseType, f.operator);
+          const needsOptions = inferredType === 'select' || inferredType === 'multi_select';
           candidates.push({
             source: 'dataset',
             datasetIndex: dsIdx,
@@ -124,6 +142,9 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
             enabled: false,
             paramName: `${f.column}_${dsIdx}`,
             paramType: inferredType,
+            optionsSource: needsOptions && ds.sourceId && ds.table
+              ? { source_id: ds.sourceId, table: ds.table, column: f.column }
+              : undefined,
           });
         }
       });
@@ -278,11 +299,17 @@ export function SaveProcessDialog({ open, onOpenChange }: SaveProcessDialogProps
     const params: Record<string, ParamDefinition> = {};
     for (const c of paramCandidates) {
       if (c.enabled) {
-        params[c.paramName] = {
+        const def: ParamDefinition = {
           type: c.paramType,
           default: c.value,
           label: c.column,
         };
+        if (c.optionsSource) {
+          def.options_source = c.optionsSource;
+          def.max_options = 500;
+          // options left empty; ParamSelect/ParamMultiSelect refresh will populate on first use
+        }
+        params[c.paramName] = def;
       }
     }
 

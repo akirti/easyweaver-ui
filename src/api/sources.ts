@@ -1,5 +1,5 @@
 import client from './client';
-import type { Source, SourceCreate, ConnectionTestResult, TableSchema, TablePreview } from '@/types';
+import type { Source, SourceCreate, ConnectionTestResult, TableSchema, TablePreview, DistinctValuesResponse } from '@/types';
 
 export const sourcesApi = {
   list: () => client.get<Source[]>('/sources').then((r) => r.data),
@@ -24,6 +24,12 @@ export const sourcesApi = {
 
   previewTable: (id: string, table: string) =>
     client.get<TablePreview>(`/sources/${id}/preview/${table}`).then((r) => r.data),
+
+  getDistinctValues: (sourceId: string, table: string, column: string, limit?: number) =>
+    client.get<DistinctValuesResponse>(
+      `/sources/${sourceId}/tables/${encodeURIComponent(table)}/columns/${encodeURIComponent(column)}/distinct`,
+      { params: { limit: limit || 500 } }
+    ).then((r) => r.data),
 
   uploadFile: (name: string, file: File) => {
     const formData = new FormData();

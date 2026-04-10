@@ -314,9 +314,19 @@ export interface ApiError {
 
 // Process Configuration types
 export interface ParamDefinition {
-  type: 'string' | 'number' | 'boolean' | 'date' | 'datetime';
+  type: 'string' | 'number' | 'boolean' | 'date' | 'datetime'
+    | 'select' | 'multi_select' | 'boolean_yesno' | 'boolean_truefalse';
   default?: unknown;
   label: string;
+  options?: unknown[];
+  options_source?: { source_id: string; table: string; column: string };
+  max_options?: number;
+}
+
+export interface DistinctValuesResponse {
+  values: unknown[];
+  truncated: boolean;
+  total_count: number | null;
 }
 
 export interface ProcessFilterConfig {

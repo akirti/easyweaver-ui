@@ -206,6 +206,8 @@ export function DatasetPanel({
               onChange={onFiltersChange}
               referenceDataset={referenceDataset}
               filterLogic={dataset.filterLogic}
+              sourceId={dataset.sourceId || undefined}
+              table={dataset.table || undefined}
               onLogicChange={onFilterLogicChange}
             />
           </div>

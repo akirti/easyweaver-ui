@@ -56,6 +56,21 @@ export function useTablePreview(sourceId: string, table: string) {
   });
 }
 
+export function useDistinctValues(
+  sourceId: string | undefined,
+  table: string | undefined,
+  column: string | undefined,
+  limit: number = 500,
+  enabled: boolean = false,
+) {
+  return useQuery({
+    queryKey: ['distinctValues', sourceId, table, column, limit],
+    queryFn: () => sourcesApi.getDistinctValues(sourceId!, table!, column!, limit),
+    enabled: enabled && !!sourceId && !!table && !!column,
+    staleTime: 60_000,
+  });
+}
+
 export function useUploadFileSource() {
   const queryClient = useQueryClient();
   return useMutation({
