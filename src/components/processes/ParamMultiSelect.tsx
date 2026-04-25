@@ -17,6 +17,7 @@ import {
 import { Check, ChevronsUpDown, RefreshCw, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sourcesApi } from '@/api/sources';
+import { lookupsApi } from '@/api/processes';
 import { toast } from 'sonner';
 import type { ParamDefinition } from '@/types';
 
@@ -24,12 +25,30 @@ interface ParamMultiSelectProps {
   param: ParamDefinition;
   value: unknown[];
   onChange: (v: unknown[]) => void;
+  processId?: string;
+  paramName?: string;
+  onLookupRefreshed?: (options: unknown[]) => void;
 }
 
-export function ParamMultiSelect({ param, value, onChange }: ParamMultiSelectProps) {
+export function ParamMultiSelect({
+  param,
+  value,
+  onChange,
+  processId,
+  paramName,
+  onLookupRefreshed,
+}: ParamMultiSelectProps) {
   const [open, setOpen] = useState(false);
   const [localOptions, setLocalOptions] = useState<unknown[]>(param.options ?? []);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Sync when param.options changes (e.g., lookup data loaded)
+  const paramOptionsKey = JSON.stringify(param.options ?? []);
+  useMemo(() => {
+    if ((param.options?.length ?? 0) > 0) {
+      setLocalOptions(param.options!);
+    }
+  }, [paramOptionsKey]);
 
   const options = useMemo(() => localOptions.map((o) => String(o)), [localOptions]);
   const selected = useMemo(() => value.map((v) => String(v)), [value]);
@@ -69,6 +88,15 @@ export function ParamMultiSelect({ param, value, onChange }: ParamMultiSelectPro
         param.max_options ?? 500,
       );
       setLocalOptions(resp.values);
+      onLookupRefreshed?.(resp.values);
+
+      // Also update the lookup cache if we have a processId
+      if (processId) {
+        lookupsApi.refresh(processId).catch(() => {
+          // Silent — best-effort cache update
+        });
+      }
+
       // Remove selected values that no longer exist
       const newStrings = resp.values.map((v) => String(v));
       const removed = selected.filter((s) => !newStrings.includes(s));
@@ -158,7 +186,7 @@ export function ParamMultiSelect({ param, value, onChange }: ParamMultiSelectPro
             className="h-9 w-9 shrink-0"
             onClick={handleRefresh}
             disabled={refreshing}
-            title="Refresh options"
+            title="Refresh options from live source"
           >
             <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
           </Button>

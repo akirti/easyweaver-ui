@@ -16,6 +16,7 @@ import {
 import { Check, ChevronsUpDown, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sourcesApi } from '@/api/sources';
+import { lookupsApi } from '@/api/processes';
 import { toast } from 'sonner';
 import type { ParamDefinition } from '@/types';
 
@@ -23,12 +24,30 @@ interface ParamSelectProps {
   param: ParamDefinition;
   value: unknown;
   onChange: (v: unknown) => void;
+  processId?: string;
+  paramName?: string;
+  onLookupRefreshed?: (options: unknown[]) => void;
 }
 
-export function ParamSelect({ param, value, onChange }: ParamSelectProps) {
+export function ParamSelect({
+  param,
+  value,
+  onChange,
+  processId,
+  paramName,
+  onLookupRefreshed,
+}: ParamSelectProps) {
   const [open, setOpen] = useState(false);
   const [localOptions, setLocalOptions] = useState<unknown[]>(param.options ?? []);
   const [refreshing, setRefreshing] = useState(false);
+
+  // Sync when param.options changes (e.g., lookup data loaded)
+  const paramOptionsKey = JSON.stringify(param.options ?? []);
+  useMemo(() => {
+    if ((param.options?.length ?? 0) > 0) {
+      setLocalOptions(param.options!);
+    }
+  }, [paramOptionsKey]);
 
   const options = useMemo(() => localOptions.map((o) => String(o)), [localOptions]);
 
@@ -49,6 +68,15 @@ export function ParamSelect({ param, value, onChange }: ParamSelectProps) {
         param.max_options ?? 500,
       );
       setLocalOptions(resp.values);
+      onLookupRefreshed?.(resp.values);
+
+      // Also update the lookup cache if we have a processId
+      if (processId) {
+        lookupsApi.refresh(processId).catch(() => {
+          // Silent — best-effort cache update
+        });
+      }
+
       // Check if current selection still exists
       if (value != null && !resp.values.some((v) => String(v) === String(value))) {
         toast.warning('Previously selected value is no longer available');
@@ -127,7 +155,7 @@ export function ParamSelect({ param, value, onChange }: ParamSelectProps) {
           className="h-9 w-9 shrink-0"
           onClick={handleRefresh}
           disabled={refreshing}
-          title="Refresh options"
+          title="Refresh options from live source"
         >
           <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
         </Button>

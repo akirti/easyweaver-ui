@@ -50,3 +50,21 @@ export const processesApi = {
   refreshCredentials: (configId: string) =>
     client.post<ProcessConfiguration>(`/processes/${configId}/refresh-credentials`).then((r) => r.data),
 };
+
+export interface LookupData {
+  key: string;
+  type: string;
+  process_id: string;
+  lookups: Record<string, unknown[]>;
+  references: Array<{ source_id: string; table: string; column: string }>;
+  created_at: string;
+  updated_at: string;
+}
+
+export const lookupsApi = {
+  get: (processId: string) =>
+    client.get<LookupData>(`/lookups/${processId}`).then((r) => r.data),
+
+  refresh: (processId: string) =>
+    client.post<LookupData>(`/lookups/${processId}/refresh`).then((r) => r.data),
+};

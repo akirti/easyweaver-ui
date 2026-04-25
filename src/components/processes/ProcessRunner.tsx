@@ -302,6 +302,7 @@ export function ProcessRunner() {
                   params={config.params}
                   values={paramValues}
                   onChange={setParamValues}
+                  processId={configId}
                 />
               </CardContent>
             </Card>
