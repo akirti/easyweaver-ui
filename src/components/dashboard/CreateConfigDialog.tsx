@@ -87,8 +87,9 @@ export function CreateConfigDialog({ open, onOpenChange }: CreateConfigDialogPro
   };
 
   const updateTableConfig = (tableName: string, field: 'timestamp_column' | 'modified_by_column', value: string) => {
+    const actualValue = value === '__none__' ? undefined : value;
     const updated = currentTableConfigs.map((tc) =>
-      tc.table_name === tableName ? { ...tc, [field]: value || undefined } : tc
+      tc.table_name === tableName ? { ...tc, [field]: actualValue } : tc
     );
     setTableConfigs(updated);
   };
@@ -217,14 +218,14 @@ export function CreateConfigDialog({ open, onOpenChange }: CreateConfigDialogPro
                           <div>
                             <Label className="text-xs text-muted-foreground">Timestamp column</Label>
                             <Select
-                              value={tc.timestamp_column || ''}
+                              value={tc.timestamp_column || '__none__'}
                               onValueChange={(v) => updateTableConfig(tc.table_name, 'timestamp_column', v)}
                             >
                               <SelectTrigger className="h-8 text-xs">
                                 <SelectValue placeholder="None" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">None</SelectItem>
+                                <SelectItem value="__none__">None</SelectItem>
                                 {getColumnsForTable(tc.table_name, 'datetime').map((col) => (
                                   <SelectItem key={col.name} value={col.name}>
                                     {col.name}
@@ -236,14 +237,14 @@ export function CreateConfigDialog({ open, onOpenChange }: CreateConfigDialogPro
                           <div>
                             <Label className="text-xs text-muted-foreground">Modified-by column</Label>
                             <Select
-                              value={tc.modified_by_column || ''}
+                              value={tc.modified_by_column || '__none__'}
                               onValueChange={(v) => updateTableConfig(tc.table_name, 'modified_by_column', v)}
                             >
                               <SelectTrigger className="h-8 text-xs">
                                 <SelectValue placeholder="None" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="">None</SelectItem>
+                                <SelectItem value="__none__">None</SelectItem>
                                 {getColumnsForTable(tc.table_name, 'text').map((col) => (
                                   <SelectItem key={col.name} value={col.name}>
                                     {col.name}
