@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Play, Loader2, CheckCircle2, XCircle, X, ChevronDown, ChevronUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -17,6 +17,9 @@ import type { DatasetState } from '@/stores/query-store';
 import type { FilterCondition, TransformSpec, QueryRequest, ColumnInfo, DataBinding, SortSpec, GroupBySpec } from '@/types';
 import type { ReferenceDataset } from './FilterBuilder';
 import { getTypeCategory } from '@/lib/column-types';
+import { useQueryWebSocket } from '@/hooks/use-query-ws';
+import { useProgressState } from '@/hooks/use-progress-state';
+import { QueryFetchProgress } from './QueryFetchProgress';
 
 interface Props {
   label: string;
@@ -73,6 +76,15 @@ export function DatasetPanel({
   const { data: queryRun } = useQueryRun(dataset.runId);
   const { data: schema } = useSourceSchema(dataset.sourceId || '');
 
+  // WebSocket execution
+  const { sendCommand, lastMessage, isConnected, connect, disconnect } = useQueryWebSocket();
+  const { state: progressState, dispatch } = useProgressState();
+  const wsExecuting = useRef(false);
+  const wantToStart = useRef(false);
+  const sentStartRef = useRef(false);
+  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const wsRequestRef = useRef<QueryRequest | null>(null);
+
   const tableColumns = schema?.find((t) => t.name === dataset.table)?.columns || [];
 
   // Sync run status from polling back to store
@@ -87,6 +99,63 @@ export function DatasetPanel({
       );
     }
   }, [queryRun?.status, queryRun?.row_count]);
+
+  // Dispatch incoming WS messages to progress reducer
+  useEffect(() => {
+    if (lastMessage) {
+      dispatch(lastMessage);
+    }
+  }, [lastMessage, dispatch]);
+
+  // When WS execution completes, update dataset state
+  useEffect(() => {
+    if (progressState.completed && progressState.runId) {
+      wsExecuting.current = false;
+      disconnect();
+      onRunUpdate(progressState.runId, 'completed', progressState.totalRows, null);
+      toast.success(`Query completed: ${progressState.totalRows?.toLocaleString() ?? 0} rows`);
+    }
+  }, [progressState.completed, progressState.runId, progressState.totalRows, disconnect]);
+
+  // Handle cancelled
+  useEffect(() => {
+    if (progressState.cancelled) {
+      wsExecuting.current = false;
+      disconnect();
+      onRunUpdate(null, 'idle', null, null);
+      toast.info('Query cancelled');
+    }
+  }, [progressState.cancelled, disconnect]);
+
+  // Handle error
+  useEffect(() => {
+    if (progressState.error && !progressState.completed) {
+      wsExecuting.current = false;
+      disconnect();
+      onRunUpdate(null, 'failed', null, progressState.error);
+    }
+  }, [progressState.error, progressState.completed, disconnect]);
+
+  // Send start command once WS is connected
+  useEffect(() => {
+    if (isConnected && wantToStart.current && !sentStartRef.current && wsRequestRef.current) {
+      sentStartRef.current = true;
+      wantToStart.current = false;
+      if (fallbackTimerRef.current) {
+        clearTimeout(fallbackTimerRef.current);
+        fallbackTimerRef.current = null;
+      }
+      sendCommand({
+        type: 'start',
+        request: wsRequestRef.current,
+        target_batch_seconds: progressState.targetSeconds,
+      });
+    }
+    if (!isConnected) {
+      sentStartRef.current = false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isConnected]);
 
   const handleRun = async () => {
     if (!dataset.sourceId || !dataset.table) {
@@ -149,15 +218,38 @@ export function DatasetPanel({
       page_size: 50,
     };
 
-    try {
-      const run = await executeMutation.mutateAsync(request);
-      onRunUpdate(run.id, 'pending');
-    } catch {
-      toast.error('Failed to execute query');
-    }
+    // Reset progress and attempt WS-first execution
+    dispatch({ type: 'reset' });
+    wsExecuting.current = true;
+    wantToStart.current = true;
+    sentStartRef.current = false;
+    wsRequestRef.current = request;
+    connect();
+
+    // Fallback to REST if WS doesn't connect within 3 seconds
+    fallbackTimerRef.current = setTimeout(async () => {
+      if (!sentStartRef.current) {
+        wsExecuting.current = false;
+        wantToStart.current = false;
+        wsRequestRef.current = null;
+        disconnect();
+        try {
+          const run = await executeMutation.mutateAsync(request);
+          onRunUpdate(run.id, 'pending');
+        } catch {
+          toast.error('Failed to execute query');
+        }
+      }
+    }, 3000);
   };
 
-  const isRunning = dataset.status === 'pending' || dataset.status === 'running';
+  const wsRunning =
+    wsExecuting.current &&
+    !progressState.completed &&
+    !progressState.cancelled &&
+    (isConnected || progressState.runId !== null);
+
+  const isRunning = wsRunning || dataset.status === 'pending' || dataset.status === 'running';
   const canRun = !!dataset.sourceId && !!dataset.table && !isRunning;
 
   return (
@@ -298,6 +390,16 @@ export function DatasetPanel({
             </>
           )}
         </Button>
+
+        {/* WS-driven progress */}
+        {wsRunning && (
+          <QueryFetchProgress
+            state={progressState}
+            onPause={() => sendCommand({ type: 'pause' })}
+            onResume={() => sendCommand({ type: 'resume' })}
+            onCancel={() => sendCommand({ type: 'cancel' })}
+          />
+        )}
 
         {dataset.status === 'failed' && dataset.error && (
           <p className="text-xs text-destructive">{dataset.error}</p>
