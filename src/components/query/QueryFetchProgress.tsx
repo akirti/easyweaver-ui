@@ -13,7 +13,8 @@ export function QueryFetchProgress({ state, onPause, onResume, onCancel }: Query
   const ds = state.datasets['query'];
   if (!ds) return null;
 
-  const isFetching = ds.status === 'fetching' || ds.status === 'paused';
+  const isPaused = state.paused;
+  const isFetching = ds.status === 'fetching';
   const rowsPerSec = ds.batch_time_ms > 0
     ? ((ds.batch_size / ds.batch_time_ms) * 1000).toFixed(0)
     : '--';
@@ -26,12 +27,12 @@ export function QueryFetchProgress({ state, onPause, onResume, onCancel }: Query
       {/* Top row: spinner + indeterminate progress bar */}
       <div className="flex items-center gap-2">
         <Loader2
-          className={`h-4 w-4 ${ds.status !== 'paused' ? 'animate-spin' : ''} text-primary`}
+          className={`h-4 w-4 ${isPaused ? '' : 'animate-spin'} text-primary`}
         />
         <div className="flex-1 h-1.5 rounded-full bg-muted overflow-hidden">
           <div
             className={`h-full rounded-full bg-primary ${
-              ds.status !== 'paused' ? 'animate-pulse' : ''
+              isPaused ? '' : 'animate-pulse'
             }`}
             style={{ width: '100%' }}
           />
@@ -52,7 +53,7 @@ export function QueryFetchProgress({ state, onPause, onResume, onCancel }: Query
       {/* Controls row */}
       {isFetching && (
         <div className="flex items-center gap-2">
-          {ds.status === 'paused' ? (
+          {isPaused ? (
             <Button variant="outline" size="sm" className="h-7 text-xs" onClick={onResume}>
               <Play className="h-3 w-3 mr-1" />
               Resume
