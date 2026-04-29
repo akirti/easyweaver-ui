@@ -493,6 +493,7 @@ export interface DataSnapshot {
 // Client → Server
 export type WsClientMessage =
   | { type: 'start'; param_values: Record<string, unknown>; max_rows: number; target_batch_seconds?: number }
+  | { type: 'start_query'; request: QueryRequest; target_batch_seconds?: number }
   | { type: 'attach'; run_id: string }
   | { type: 'pause' }
   | { type: 'resume' }
