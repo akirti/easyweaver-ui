@@ -91,7 +91,7 @@ export function resetClient(): void {
 /** Proxy that always delegates to the active client instance */
 const client = new Proxy({} as AxiosInstance, {
   get(_target, prop: string) {
-    return (activeClient as Record<string, unknown>)[prop];
+    return (activeClient as unknown as Record<string, unknown>)[prop];
   },
 });
 

@@ -1,4 +1,4 @@
-import { renderWithProviders, screen, userEvent, waitFor, fireEvent } from '@/test/test-utils';
+import { renderWithProviders, screen, userEvent, waitFor } from '@/test/test-utils';
 import { ColumnPicker } from '@/components/query/ColumnPicker';
 import type { ColumnInfo } from '@/types';
 

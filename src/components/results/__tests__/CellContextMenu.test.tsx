@@ -11,12 +11,8 @@ const defaultProps = {
   onExcludeValue: vi.fn(),
 };
 
-function renderMenu(overrides = {}) {
+function renderMenu(overrides: Partial<typeof defaultProps> = {}) {
   const props = { ...defaultProps, ...overrides };
-  props.onCopyValue = overrides.onCopyValue ?? vi.fn();
-  props.onCopyRow = overrides.onCopyRow ?? vi.fn();
-  props.onFilterByValue = overrides.onFilterByValue ?? vi.fn();
-  props.onExcludeValue = overrides.onExcludeValue ?? vi.fn();
   return {
     ...renderWithProviders(
       <CellContextMenu {...props}>

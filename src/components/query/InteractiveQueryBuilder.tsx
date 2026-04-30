@@ -33,7 +33,6 @@ export function InteractiveQueryBuilder() {
     ? store.datasets[0].runId
     : null;
   const canSave = finalRunId || singleDatasetRunId;
-  const activeRunId = finalRunId || singleDatasetRunId;
 
   // Fetch columns from the final join result for post-join filters
   const { data: finalResultData } = useQueryResults(finalRunId, { page: 1, page_size: 1 });

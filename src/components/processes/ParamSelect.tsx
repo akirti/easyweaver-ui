@@ -34,7 +34,7 @@ export function ParamSelect({
   value,
   onChange,
   processId,
-  paramName,
+  paramName: _paramName,
   onLookupRefreshed,
 }: ParamSelectProps) {
   const [open, setOpen] = useState(false);

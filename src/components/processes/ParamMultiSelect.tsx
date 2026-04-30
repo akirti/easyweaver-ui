@@ -35,7 +35,7 @@ export function ParamMultiSelect({
   value,
   onChange,
   processId,
-  paramName,
+  paramName: _paramName,
   onLookupRefreshed,
 }: ParamMultiSelectProps) {
   const [open, setOpen] = useState(false);
